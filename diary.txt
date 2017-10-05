@@ -1,0 +1,31 @@
+Looking for interesting data files.
+In 'Documents\Data\Static Bulk Analysis' there is a 'Results.ipynb'.
+In this notebook it loads data from '2016-09-22', '2016-09-23to27', '2016-09-27', '2016-09-28', '2016-10-01', 2016-10-04'
+These are likely the data folders I'm looking for.
+The notebook references each folder having an 'out.txt'. What's this?
+
+In 'Documents\Data\2016-09-22'
+'out.txt' is 19 lines of 4 floats each. The context is unclear.
+'Results.ipynb' writes 'out.txt'.
+It's a numpy array of 'fpulses', 'means', 'amps' and 'phases'.
+How are these produced?
+
+'fpulses' is read straight from a datafile, 'dscanmap.txt'
+'dscanmap.txt' is a manually typed list of data files and the conditions of the data run.
+It has the info [fnum (file number), DL-Pro (absolute DL-Pro frequency in GHz), DL-100 (same for DL-100), MW f (same for microwave frequency), attn (MW attenuation of variable attenuator, dB), fpulse (voltage pulse applied to vertical plate in mV)].
+All delay scan files are listed.
+So 'fpulses' is the static voltage pulse in mV applied to the top (or bottom) plate.
+
+'means', 'phases' and 'amps' are produced by 'Results.ipynb'.
+They are all set by 'delay_scan()', after which amp and phase are changed together so amp > 0 and phase is mod 1.
+'delay_scan()' reads a delay data run.
+First it zero corrects and averages.
+Then it fits with 'fit_cos_3()'. A basic y = amp * cos(2*pi*(x-x0)) + y0
+'amps' -> amp, 'phases' -> x0 and 'means' -> y0.
+Note that the delay steps from the stage are translated to distance, and then divided by the MW wavelenght before being passed to the fit. So x0 is the phase in terms of wavelength offsets.
+
+So we know that 'fpulses' describes the varied experimental condition, and 'amps', 'means' and 'phases' are the fit values.
+This is all the information from inside a data set that we need for each data run.
+'out.txt' should give all of the meaningful information from a data run.
+
+Lets start on Git so I'm not tied to this computer.
