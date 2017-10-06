@@ -29,3 +29,15 @@ This is all the information from inside a data set that we need for each data ru
 'out.txt' should give all of the meaningful information from a data run.
 
 Lets start on Git so I'm not tied to this computer.
+Made a git repo StaPD-Analysis 'git init' and 'git add'
+Used .gitignore to exclude '*.pdf'
+Pushed to GitHub and cloned on laptop 'git push origin master'
+'https://github.com/edmagnu/StaPD-Analysis.git'
+Branching? I'll see when I get there.
+
+Now that I have the data, I should look at metadata cleaning.
+Focus on '#_delay.txt' files for now.
+Necessary metadata:
+	'date', 'dlpro', 'dl100', 'static', 'mwon', 'mwf', 'attn'
+	Use 'other' to store the rest of the info in a long string.
+Use '# key: metadata' format.
