@@ -44,3 +44,5 @@ Use '# key: metadata' format.
 
 'Original Data' folders marked 'Read Only'
 Will test metadata format on '2016-09-22\6_delay.txt'
+'6_delay.txt' is reformatted. All comments are metadata, I can pick which ones to use.
+'Analysis.py' is created. Imports metadata and data from '6_delay.txt' into DataFrame
