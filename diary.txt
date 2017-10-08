@@ -41,3 +41,6 @@ Necessary metadata:
 	'date', 'dlpro', 'dl100', 'static', 'mwon', 'mwf', 'attn'
 	Use 'other' to store the rest of the info in a long string.
 Use '# key: metadata' format.
+
+'Original Data' folders marked 'Read Only'
+Will test metadata format on '2016-09-22\6_delay.txt'
