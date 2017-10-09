@@ -54,3 +54,7 @@ I'll try to write something to do the heavy lifting.
 'metadata_cleaner.py' does this.
 I've been successful. All the metadata from "8_delay.txt" has been handled, and any extra gets stored in "Other".
 "Filename", "Date", "Title", "DLPro", "DL100", "Static", "MWOn", "MWf", "Attn" are all essential, others are optional.
+
+"metadata_cleaner()" did it's job. I ran it on these folders.
+"2016-09-22", "2016-09-23", "2016-09-24", "2016-09-26", "2016-09-27", "2016-09-28", "2016-10-01", "2016-10-04"
+I gave a quick quality control check, they look good.

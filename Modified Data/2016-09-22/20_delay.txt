@@ -1,16 +1,21 @@
-# 2016-09-22-Thursday
-# DL-Pro & DL-100 Locked delay scan.
-# DL-Pro @ 365872.6 GHz & DL-100 @ 365856.7 GHz
-# B2 = T2 + 2.050 us
-# HP 214B FIP at 5.5 on 100V setting ; Applied to Top ; Mesh & Vin of MCP @ +25V ; Vout of MCP @ +2025 V
-# Oven @ 32 A
-# MW On ; f = 15932.0 MHz; Attn = 38 dB (32+6)
-# Static 1500 mV Pulsed
-# Gate = 200 ns ; Amp = 25x ; Sensitivity = 5 mV
-# +/- 30 mV IR/Oven offset.
-# Top: 0 V ; Bot: -0.409 V ; IR: +0.052 V ; Oven: -0.052 V ; Vis: -0.011 V ; MW: +0.011 V
-# i, step, norm, norm bkgnd, signal, signal bkgnd
-# 4 passes
+# Filename	20_delay.txt
+# Date	2016-09-22
+# Title	DL-Pro & DL-100 Locked delay scan.
+# DL-Pro	365872.6 GHz
+# DL-100	365856.7 GHz
+# Static	1500 mV Pulsed
+# MWOn	On
+# MWf	15932.0 MHz
+# Attn	38 dB
+# FixedAttn	6 dB
+# B2	B2 = T2 + 2.050 us
+# HP214B	HP 214B FIP at 5.5 on 100V setting ; Applied to Top ; Mesh & Vin of MCP @ +25V ; Vout of MCP @ +2025 V
+# Oven	32 A
+# Boxcar	Gate = 200 ns ; Amp = 25x ; Sensitivity = 5 mV
+# Offset	+/- 30 mV IR/Oven offset.
+# Bias	Top: 0 V ; Bot: -0.409 V ; IR: +0.052 V ; Oven: -0.052 V ; Vis: -0.011 V ; MW: +0.011 V
+# Passes	4
+i, step, norm, nbackground, signal, sbackground
 0	0	0.256699	-0.0239516	-0.0393544	-0.045747	
 1	744	0.260514	-0.0239516	-0.0354412	-0.045747	
 2	1488	0.254562	-0.0239516	-0.0401436	-0.045747	
