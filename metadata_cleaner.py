@@ -8,21 +8,27 @@ Created on Sun Oct  8 13:54:06 2017
 # Interpret sloppy delay scan metadata and rewrite as formatted metadata
 # Eric Magnuson, University of Virginia, VA
 
-import pandas as pd
+import os
 
 
 def d_print(d):
     """Print out dictionary key : value. Returns None"""
-    for k,v in d.items():
+    for k, v in d.items():
         print(k, ":", v)
 
 
 # File location
 path = "C:\\Users\\edmag\\Documents\\Work\\Data\\StaPD-Analysis" \
        + "\\Modified Data\\MetaTest"
-file = "\\8_delay.txt"
-fname = path + file
-metadata = {}  # initialize dictionary
+filename = "\\8_delay.txt"
+fname = path + filename
+# initialize metadata dict with proper key order
+metadata = {"Filename": "Not Found", "Date": "Not Found", "Title": "Not Found",
+            "DLPro": "Not Found", "DL100": "Not Found", "Static": "Not Found",
+            "MWOn": "Not Found", "MWf": "Not Found",
+            "Attn": "Not Found", "FixedAttn": None, "B2": None, "HP214B": None,
+            "Oven": None, "Boxcar": None, "Offset": None, "Bias": None,
+            "Passes": None, "Other": None, "CLabels": "Not Found"}
 # Start with date, first line
 with open(fname) as file:
     for i, line in enumerate(file):
@@ -104,6 +110,52 @@ with open(fname) as file:
             print("It's Boxcar settings!")
             metaBoxcar = "# Boxcar\t" + line[2:]
             metadata["Boxcar"] = metaBoxcar
-        # Garbage
+        # Offset
+        elif ("IR" in line) & ("Oven" in line) & ("Vis" not in line) \
+                & ("offset" in line):
+            print("It's an IR/Oven offset!")
+            metaOffset = "# Offset\t" + line[2:]
+            metadata["Offset"] = metaOffset
+        # B2 delay
+        elif ("B2" in line) & ("T2" in line):
+            print("It's a delay!")
+            metaB2 = "# B2\t" + line[2:]
+            metadata["B2"] = metaB2
+        # Oven
+        elif line.split(" ")[1] == "Oven":
+            print("It's oven current!")
+            line = line.split(" ")
+            metaOven = "# Oven\t" + line[3] + " " + line[4].strip() + "\n"
+            metadata["Oven"] = metaOven
+        # HP214B pulse settings
+        elif line.split(" ")[1] == "HP":
+            print("It's HP Pulse settings!")
+            metaHP214B = "# HP214B\t" + line[2:]
+            metadata["HP214B"] = metaHP214B
+        # other
         else:
-            print(line[:30].strip())
+            print(line)
+            if metadata["Other"] is None:
+                metadata["Other"] = "# Other\t"
+            line = line.strip()
+            metadata["Other"] = metadata["Other"] + line[2:] + " ; "
+if metadata["Other"] is not None:
+    metadata["Other"] = metadata["Other"] + "\n"
+metaFilename = "# Filename\t" + fname.split("\\")[-1] + "\n"
+metadata["Filename"] = metaFilename
+# print metadata in order
+print("\nMetadata output\n")
+metadata_string = ""
+for k, v in metadata.items():
+    if metadata[k] is not None:
+        metadata_string = metadata_string + v
+print(metadata_string)
+# try writing to new file
+filenamenew = "\\8_delay_meta.txt"
+fnamenew = path + filenamenew
+with open(fname, 'r') as old:
+    with open(fnamenew, 'w') as new:
+        new.write(metadata_string)
+        for line in old:
+            if (line[0] != "#") & (line[:9] != "# i, step"):
+                new.write(line)

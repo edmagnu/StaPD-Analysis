@@ -51,3 +51,6 @@ That means I have to reformat all the metadata
 
 Metadata by hand would take 3min/file, 1 hour per folder.
 I'll try to write something to do the heavy lifting.
+'metadata_cleaner.py' does this.
+I've been successful. All the metadata from "8_delay.txt" has been handled, and any extra gets stored in "Other".
+"Filename", "Date", "Title", "DLPro", "DL100", "Static", "MWOn", "MWf", "Attn" are all essential, others are optional.
