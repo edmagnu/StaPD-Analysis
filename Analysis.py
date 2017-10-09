@@ -50,9 +50,12 @@ def read_tidy(fname):
 # main program starts here
 # working directory
 path = "C:\\Users\\edmag\\Documents\\Work\\Data\\StaPD-Analysis\\Modified Data"
-file = "\\2016-09-22\\6_delay.txt"
+# Individual file data loading
+file = "\\2016-09-22\\6_delay.txt"  # target
 fname = path + file  # full target filepath
 data = read_tidy(fname)  # read data and metadata
-print(data.keys())
+# Load all '#_delay.txt' files with metadata
+folder = "\\2016-09-22"
 
+# TODO(edm5gb): Figure out how to produce a list of files to load
 # TODO(edm5gb): Read all target files into a tidy data set

@@ -3,7 +3,7 @@
 # Title	DL-Pro & DL-100 Locked delay scan.
 # DLPro	365872.6 GHz
 # DL100	365856.7 GHz
-# Static	-100 mV
+# Static	-100 mV Pulsed
 # MWOn	On
 # MWf	15932.0 MHz
 # Attn	44 dB
