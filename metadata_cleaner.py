@@ -20,7 +20,7 @@ def d_print(d):
 def simple_path(folder, filename):
     """Tool to build file paths for the task of cleaning metadata.
     Returns path string"""
-    base = "C:\\Users\\edmag\\Documents\\Work\\Data\\StaPD-Analysis"
+    base = "."
     path = "\\".join([base, folder, filename])
     return path
 
@@ -47,8 +47,7 @@ def folder_clean(folder):
 
 
 def flist_clean():
-    target = ("C:\\Users\\edmag\\Documents\\Work\\Data\\StaPD-Analysis\\"
-              + "data_folders.txt")
+    target = (".\\" + "data_folders.txt")
     folders = []
     with open(target) as file:
         for line in file:
@@ -194,7 +193,8 @@ def metadata_cleaner(fname):
     if metadata["Other"] is not None:
         metadata["Other"] = metadata["Other"] + "\n"
     # assign Filename
-    metaFilename = "# Filename\t" + fname.split("\\")[-1] + "\n"
+    metaFilename = "\\".join(fname.split("\\")[-2:])
+    metaFilename = "# Filename\t" + metaFilename + "\n"
     metadata["Filename"] = metaFilename
     # print metadata in order
     print("\nMetadata output\n")
@@ -219,8 +219,7 @@ def metadata_cleaner(fname):
 
 # main program starts here
 # File location
-# path = "C:\\Users\\edmag\\Documents\\Work\\Data\\StaPD-Analysis" \
-#        + "\\Modified Data\\MetaTest"
+# path = "." + "\\Modified Data\\MetaTest"
 # filename = "\\8_delay.txt"
 # fname = path + filename
 # metadata_cleaner(fname)
