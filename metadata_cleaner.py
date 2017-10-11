@@ -46,6 +46,19 @@ def folder_clean(folder):
         metadata_cleaner(fname)
 
 
+def flist_clean():
+    target = ("C:\\Users\\edmag\\Documents\\Work\\Data\\StaPD-Analysis\\"
+              + "data_folders.txt")
+    folders = []
+    with open(target) as file:
+        for line in file:
+            line = line.strip()
+            line = "\\".join(["Original Data", line])
+            folders.append(line)
+    for folder in folders:
+        folder_clean(folder)
+
+
 def metadata_cleaner(fname):
     """Reads metadata and column labels from the old style I handwrote and
     rewrites them in a cleaner style.
@@ -134,8 +147,8 @@ def metadata_cleaner(fname):
             # Column labels
             elif line[:9] == "# i, step":
                 print("It's column labels!")
-                metaCLabels = \
-                    "i, step, norm, nbackground, signal, sbackground\n"
+                metaCLabels = "\t".join(["i", "step", "norm", "nbackground",
+                                         "signal", "sbackground"]) + "\n"
                 metadata["CLabels"] = metaCLabels
             # Bias
             elif ("Top" in line) & ("Bot" in line) & ("IR" in line):

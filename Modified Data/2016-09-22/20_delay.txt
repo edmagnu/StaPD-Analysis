@@ -15,7 +15,7 @@
 # Offset	+/- 30 mV IR/Oven offset.
 # Bias	Top: 0 V ; Bot: -0.409 V ; IR: +0.052 V ; Oven: -0.052 V ; Vis: -0.011 V ; MW: +0.011 V
 # Passes	4
-i, step, norm, nbackground, signal, sbackground
+i	step	norm	nbackground	signal	sbackground
 0	0	0.256699	-0.0239516	-0.0393544	-0.045747
 1	744	0.260514	-0.0239516	-0.0354412	-0.045747
 2	1488	0.254562	-0.0239516	-0.0401436	-0.045747
