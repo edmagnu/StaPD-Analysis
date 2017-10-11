@@ -202,7 +202,7 @@ def metadata_cleaner(fname):
             for line in old:
                 # don't repeat comments and column labels
                 if (line[0] != "#") & (line[:9] != "# i, step"):
-                    new.write(line)
+                    new.write(line.strip() + "\n")
 
 # main program starts here
 # File location
