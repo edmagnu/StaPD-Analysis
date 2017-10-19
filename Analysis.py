@@ -28,7 +28,7 @@ def folderlist_gen(fname):
     in "fname".
     Returns a list of filenames."""
     folders = []  # list of folders
-    with open(target) as file:
+    with open(fname) as file:
         for line in file:
             line = line.strip()  # get rid of "\n"
             line = "\\".join([".", "Modified Data", line])  # get a full path

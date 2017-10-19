@@ -1,7 +1,7 @@
 # Filename	2016-10-01\40_delay.txt
 # Date	2016-10-01
 # Title	DL-Pro & DL-100 Locked delay scan.
-# DL-Pro	36588.5 GHz
+# DL-Pro	365888.5 GHz
 # DL-100	365872.6 GHz
 # Static	-100 mV Pulsed
 # MWOn	On

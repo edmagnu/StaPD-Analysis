@@ -87,3 +87,16 @@ I sould check that all of the important metadata is correct.
 	Static: Between -3000 and 3000 mV, good +/- coverage
 	Attn: 53 - 10 dB
 	MWOn: Should always be on for these data.
+
+Looking at laser frequencies, "2016-10-01" has DL-Pro < 300 THz.
+Specifically, 36588.5 GHz, nonsense
+Must be a typo, forgot the last digit.
+Knowing DL-100 and MWf might help.
+Problem in Original and Modified data.
+DL-100 is always 36587.6 GHz, MWf is always 15932.0 MHz
+So DL-Pro must be either 365856.7 or 365888.5 GHz
+365888.5 GHz is a sensible typo, and puts DL-Pro above Dl-100.
+Check that it's in the folder AND DL-Pro = 36588.5
+All other DL-Pro metadata are reasonable, but still should check.
+
+Check commit history with "git log"

@@ -46,7 +46,7 @@ def folder_clean(folder):
         metadata_cleaner(fname)
 
 
-def flist_clean():
+def folderlist_clean():
     target = (".\\" + "data_folders.txt")
     folders = []
     with open(target) as file:
@@ -61,20 +61,34 @@ def flist_clean():
 def typo_fix(metadata):
     """Some data has typos, they have to be fixed manually.
     Returns metadata with fixed typos."""
-    print("-----")
-    test = metadata["Filename"].strip().split("\t")[1]
+    print("----- Typo Fix -----")  # announce what's happening
+    test = metadata["Filename"].strip().split("\t")[1]  # pull filename
+    # "2016-09-27\\20_delay.txt" has a "Static" typo.
+    # checked against "dscanmap.txt" and neighbor delay scans.
     if test == "2016-09-27\\20_delay.txt":
         print(test, "\tFixed")
-        metaStatic = metadata["Static"].split("\t")
-        metaStatic[1] = metaStatic[1].split(" ")
-        metaStatic[1][0] = "1500"
-        metaStatic[1] = " ".join(metaStatic[1])
-        metaStatic = "\t".join(metaStatic)
-        metadata["Static"] = metaStatic
+        meta = metadata["Static"].split("\t")
+        meta[1] = meta[1].split(" ")
+        meta[1][0] = "1500"
+        meta[1] = " ".join(meta[1])
+        meta = "\t".join(meta)
+        metadata["Static"] = meta
         print(metadata["Static"])
-    print("-----")
+    # "2016-10-01", all files have a DL-Pro Typo
+    # Checked against "DL-100" & "MWf", and "dscanmap.txt"
+    if test.split("\\")[0] == "2016-10-01":
+        meta = metadata["DLPro"].split("\t")
+        meta[1] = meta[1].split(" ")
+        if meta[1][0] == "36588.5":
+            print(test, "\tFixed")
+            meta[1][0] = "365888.5"
+            meta[1] = " ".join(meta[1])
+            meta = "\t".join(meta)
+            metadata["DLPro"] = meta
+            print(metadata["DLPro"])
+    print("----- Typo Fix -----")
     return metadata
-    
+
 
 def metadata_cleaner(fname):
     """Reads metadata and column labels from the old style I handwrote and
