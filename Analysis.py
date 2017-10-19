@@ -23,6 +23,22 @@ def dlist_gen(path):
     return dlist
 
 
+def folderlist_gen(fname):
+    """Produce a list of all the "?_delay.txt" filenames in every folder listed
+    in "fname".
+    Returns a list of filenames."""
+    folders = []  # list of folders
+    with open(target) as file:
+        for line in file:
+            line = line.strip()  # get rid of "\n"
+            line = "\\".join([".", "Modified Data", line])  # get a full path
+            folders.append(line)
+    files = []  # list of files in all folders
+    for folder in folders:
+        files = files + dlist_gen(folder + "\\")  # dlist_gen by folder
+    return files 
+
+
 def read_metadata(fname):
     """Read file metadata and return a dictionary"""
     meta = {}  # initialize metadata dict
@@ -61,23 +77,12 @@ def read_tidy(fname):
 
 
 # main program starts here
-# generate file list
+# generate file list from data folder list
 target = (".\\" + "data_folders.txt")
-folders = []
-with open(target) as file:
-    for line in file:
-        line = line.strip()
-        line = "\\".join([".", "Modified Data", line])
-        folders.append(line)
-files = []
-for folder in folders:
-    files = files + dlist_gen(folder + "\\")
-
+files = folderlist_gen(target)  # get every delay file from each folder.
+# read all file data & metadata into a tidy DataFrame
 data = pd.DataFrame()
 for file in files:
     print(file)
     data = data.append(read_tidy(file))
 print(data.keys())
-
-# TODO(edm5gb): Figure out how to produce a list of files to load
-# TODO(edm5gb): Read all target files into a tidy data set
