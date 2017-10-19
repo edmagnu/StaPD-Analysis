@@ -9,6 +9,19 @@ Created on Sun Oct  8 11:24:19 2017
 # Eric Magnuson, University of Virginia, VA
 
 import pandas as pd
+import os
+
+
+def dlist_gen(path):
+    """Produce a list of all "?_delay.txt" filenames in the given folder.
+    Returns list of filenames"""
+    flist = os.listdir(path)
+    dlist = list()
+    for i in range(len(flist)):
+        if "_delay.txt" in flist[i]:
+            dlist.append(path + flist[i])
+    return dlist
+
 
 def read_metadata(fname):
     """Read file metadata and return a dictionary"""
@@ -31,31 +44,40 @@ def read_tidy(fname):
     # Combine important metadata and data.
     # Interpret each meta individually, add to all observations
     data["Filename"] = [meta["Filename"]]*data.shape[0]
-    data["Date"] = [pd.to_datetime(meta["Date"])]*data.shape[0]
+    # data["Date"] = [pd.to_datetime(meta["Date"])]*data.shape[0]
     # strip unit off numerical value with ".split()"
-    data["DLPro"] = [float(meta["DLPro"].split(" ")[0])]*data.shape[0]
-    data["DL100"] = [float(meta["DL100"].split(" ")[0])]*data.shape[0]
+    data["DL-Pro"] = [float(meta["DL-Pro"].split(" ")[0])]*data.shape[0]
+    data["DL-100"] = [float(meta["DL-100"].split(" ")[0])]*data.shape[0]
     data["Static"] = [float(meta["Static"].split(" ")[0])]*data.shape[0]
     data["MWOn"] = [meta["MWOn"] == "On"]*data.shape[0]
     data["MWf"] = [float(meta["MWf"].split(" ")[0])]*data.shape[0]
     data["Attn"] = [float(meta["Attn"].split(" ")[0])]*data.shape[0]
     # reorder DataFrame columns.
-    key_order = ["Filename", "Date", "DLPro", "DL100", "Static", "MWOn", "MWf",
-                 "Attn", "i", "step", "norm", "nbackground", "signal",
+    key_order = ["Filename", "DL-Pro", "DL-100", "Static", "MWOn",
+                 "MWf", "Attn", "i", "step", "norm", "nbackground", "signal",
                  "sbackground"]
     data = data[key_order]
     return data
 
 
 # main program starts here
-# target
-path = "C:\\Users\\edmag\\Documents\\Work\\Data\\StaPD-Analysis\\Modified Data"
-folder = "2016-09-22"
-file = "9_delay.txt"
-fname = "\\".join([path, folder, file])
-print(fname)
-# read in data
-data = pd.read_csv(fname, sep="\t", comment="#", index_col=False)
-print(data)
+# generate file list
+target = (".\\" + "data_folders.txt")
+folders = []
+with open(target) as file:
+    for line in file:
+        line = line.strip()
+        line = "\\".join([".", "Modified Data", line])
+        folders.append(line)
+files = []
+for folder in folders:
+    files = files + dlist_gen(folder + "\\")
+
+data = pd.DataFrame()
+for file in files:
+    print(file)
+    data = data.append(read_tidy(file))
+print(data.keys())
+
 # TODO(edm5gb): Figure out how to produce a list of files to load
 # TODO(edm5gb): Read all target files into a tidy data set

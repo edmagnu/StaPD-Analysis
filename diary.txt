@@ -59,5 +59,31 @@ I've been successful. All the metadata from "8_delay.txt" has been handled, and 
 "2016-09-22", "2016-09-23", "2016-09-24", "2016-09-26", "2016-09-27", "2016-09-28", "2016-10-01", "2016-10-04"
 I gave a quick quality control check, they look good.
 
-Next task is to load every file into one dataframe with metadata.
 Files all have trailing tabs, modifying 'metadata_cleaner()" to "line.strip()"
+"flist_clean()" reads folders from "data_folders.txt" and cleans them.
+Column labels fixed to be tab separated.
+Tested with "read_tidy()", data loaded succesfully.
+
+Now I need to read all data files into one big DataFrame.
+First I aught to get a proper list of files.
+Reads "data_folders.txt" to get the list of data folders.
+
+All files in each folder gets read in.
+This naturally produces errors when there are big typos.
+I will add an editing step to "metadata_cleaner()" to fix typos.
+I need to go error by error, and track down the right "fix."
+
+"2016-09-27\20_delay.txt":
+	Static is '15-00 mV Pulsed"
+	This could be +/- 1500 mV
+	According to "dscanmap.txt", it is +1500 mV
+	"21_delay.txt" is -1500 mV
+It looks like that's the only typo. For now.
+
+I sould check that all of the important metadata is correct.
+	Laser Frequency: Double check each day vs record
+		Also check DL-Pro vs DL-100
+	MW Frequency: Aught to be ~15930 MHz
+	Static: Between -3000 and 3000 mV, good +/- coverage
+	Attn: 53 - 10 dB
+	MWOn: Should always be on for these data.

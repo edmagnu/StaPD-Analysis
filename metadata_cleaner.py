@@ -58,6 +58,24 @@ def flist_clean():
         folder_clean(folder)
 
 
+def typo_fix(metadata):
+    """Some data has typos, they have to be fixed manually.
+    Returns metadata with fixed typos."""
+    print("-----")
+    test = metadata["Filename"].strip().split("\t")[1]
+    if test == "2016-09-27\\20_delay.txt":
+        print(test, "\tFixed")
+        metaStatic = metadata["Static"].split("\t")
+        metaStatic[1] = metaStatic[1].split(" ")
+        metaStatic[1][0] = "1500"
+        metaStatic[1] = " ".join(metaStatic[1])
+        metaStatic = "\t".join(metaStatic)
+        metadata["Static"] = metaStatic
+        print(metadata["Static"])
+    print("-----")
+    return metadata
+    
+
 def metadata_cleaner(fname):
     """Reads metadata and column labels from the old style I handwrote and
     rewrites them in a cleaner style.
@@ -73,7 +91,7 @@ def metadata_cleaner(fname):
                 "FixedAttn": None, "B2": None, "HP214B": None, "Oven": None,
                 "Boxcar": None, "Offset": None, "Bias": None, "Passes": None,
                 "Other": None, "CLabels": "Not Found"}
-    # Start with date, first line
+    # Go through each line, check for particular metadata.
     with open(fname) as file:
         for i, line in enumerate(file):
             # Only comment lines
@@ -196,6 +214,8 @@ def metadata_cleaner(fname):
     metaFilename = "\\".join(fname.split("\\")[-2:])
     metaFilename = "# Filename\t" + metaFilename + "\n"
     metadata["Filename"] = metaFilename
+    # Check if file has typo that needs corrected
+    metadata = typo_fix(metadata)
     # print metadata in order
     print("\nMetadata output\n")
     metadata_string = ""
