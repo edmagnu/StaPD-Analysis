@@ -73,6 +73,7 @@ def read_tidy(fname):
                  "MWf", "Attn", "i", "step", "norm", "nbackground", "signal",
                  "sbackground"]
     data = data[key_order]
+    data = data.reset_index()  # unique index 
     return data
 
 
