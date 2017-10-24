@@ -73,17 +73,25 @@ def read_tidy(fname):
                  "MWf", "Attn", "i", "step", "norm", "nbackground", "signal",
                  "sbackground"]
     data = data[key_order]
-    data = data.reset_index()  # unique index 
+    data = data.reset_index()  # unique index
     return data
 
 
-# main program starts here
-# generate file list from data folder list
-target = (".\\" + "data_folders.txt")
-files = folderlist_gen(target)  # get every delay file from each folder.
-# read all file data & metadata into a tidy DataFrame
-data = pd.DataFrame()
-for file in files:
-    print(file)
-    data = data.append(read_tidy(file))
-print(data.keys())
+def build_rawdata():
+    """Read in a list of folders. Read in data from every "#_delay.txt" file in
+    each folder, and interpret the metadata. Save the data frame to
+    "rawdata.txt"
+    Returns read data and metadata as a DataFrame."""
+    # generate file list from data folder list
+    target = (".\\" + "data_folders.txt")
+    files = folderlist_gen(target)  # get every delay file from each folder.
+    # read all file data & metadata into a tidy DataFrame
+    data = pd.DataFrame()
+    for file in files:
+        print(file)
+        data = data.append(read_tidy(file))
+    print(data.keys())
+    # write so I can use it elsewhere.
+    data.to_csv("rawdata.txt", sep="\t")
+    print("Data written to 'rawdata.txt'")
+    return data

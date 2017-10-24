@@ -211,4 +211,9 @@ Naively, I'd like to look at 44 dB
 Two ways to go:
 	Look at the picture sources and see what they're doing.
 	Start building data analysis so I can look.
-	
+
+Lets ask what I need to do for analysis.
+Each file needs to be looked at independently.
+From it, fit parameters have to be extracted.
+I should hold a DataFrame separate from the measurements, but with the same metadata.
+First, lets write the master dataframe to a file so I don't reload it every time. "rawdata.txt"
