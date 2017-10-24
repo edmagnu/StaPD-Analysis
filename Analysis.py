@@ -90,7 +90,7 @@ def build_rawdata():
         print(file)
         data = data.append(read_tidy(file))
     data = data.reset_index()  # unique index
-    data = data.drop("index", axis=0)  # extra index clolumn
+    data = data.drop("index", axis=1)  # extra index clolumn
     print(data.keys())
     # write so I can use it elsewhere.
     data.to_csv("rawdata.txt", sep="\t")
@@ -99,5 +99,7 @@ def build_rawdata():
 
 
 # main program starts here
-# read data from "rawdata.txt"
-# data = pd.read_csv("rawdata.txt", sep="\t", index_col=0)
+data = pd.read_csv("rawdata.txt", sep="\t", index_col=0)  # read in all data
+filelist = data["Filename"].unique()  # get list of files
+mask = data["Filename"] == filelist[0]  # mask all but one file to work on
+data[mask].plot(x="step", y="signal", kind="scatter")
