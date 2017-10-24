@@ -73,7 +73,6 @@ def read_tidy(fname):
                  "MWf", "Attn", "i", "step", "norm", "nbackground", "signal",
                  "sbackground"]
     data = data[key_order]
-    data = data.reset_index()  # unique index
     return data
 
 
@@ -90,8 +89,15 @@ def build_rawdata():
     for file in files:
         print(file)
         data = data.append(read_tidy(file))
+    data = data.reset_index()  # unique index
+    data = data.drop("index", axis=0)  # extra index clolumn
     print(data.keys())
     # write so I can use it elsewhere.
     data.to_csv("rawdata.txt", sep="\t")
     print("Data written to 'rawdata.txt'")
     return data
+
+
+# main program starts here
+# read data from "rawdata.txt"
+# data = pd.read_csv("rawdata.txt", sep="\t", index_col=0)
