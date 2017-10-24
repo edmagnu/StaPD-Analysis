@@ -100,3 +100,115 @@ Check that it's in the folder AND DL-Pro = 36588.5
 All other DL-Pro metadata are reasonable, but still should check.
 
 Check commit history with "git log"
+
+I want a list of just files and metadata from "data".
+Get rid of all of the experimental data (i, signal, ...)
+"DataFrame.drop_duplicates()" removes the many copies, cuts down to the 189 unique data files and their metadata.
+
+Metadata checks:
+	DL-Pro is only 5 values
+		365872.6, 365856.7, 365840.7, 365824.8, 365888.5
+	DL-100 is only 5 values
+		365856.7, 365840.7, 365824.8, 365808.9, 365872.6
+	MWf is always between 15931.0 and 15933.0 MHz
+	DL-Pro - DL-100 is always 15.9 or 16 GHz
+		Also says DL-Pro > DL-100, as intended.
+	MWOn is always 1.0, always "On"
+	Static is always mod 10 between +/- 8000 mV
+	Attn always 5 values
+		38, 44, 50, 32, 26 dB
+
+Now I need to look at the metadata file by file.
+	2016-09-22:
+		Attn is 38 in Original record, 44 on dscanmap
+		This could be very bad?
+		I'm leaving it at 44 for now, I can look at lab notes later.
+	2016-09-23:
+		"16_delay.txt" & "17_delay.txt" are commented out of "dscanmap.txt". At the time, determined by experimental condition check (exp. cond. check) to be bad.
+		3, 4 are left off "dscanmap.txt"
+			They were reference scans for relative phase.
+		Ignoring MWf rounding errors <100 kHz
+		11 & 12 left off "dscanmap.txt"
+			Bad data by exp. cond. check.
+	2016-09-24:
+		All DL-Pro and DL-100 values don't match "dscanmap.txt"
+		365856.7 & 365840.7 in "dscanmap.txt"
+		365872.6 & 365856.7 in data files.
+		Will have to look at notes to resolve.
+	2016-09-26:
+		8 & 9 excluded by exp. cond. check.
+	2016-09-27:
+		7 ignored by exp. cond. check.
+		15 Ignored, repeat data point
+	2016-09-28:
+		DL-Pro has small error
+			365824.8 in data listed as 365828.8 in dscanmap.txt"
+			MWf and DL-100 shows it must be 24.8.
+			Not marked, not very significant
+		2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 ignored by exp. cond. check.
+		9 & 10 static fields sign flip.
+		27 ignored by exp. cond. check.
+	2016-10-01:
+		MWf 15932.0 in files, 15931.9 in dscanmap
+			Ignoring 100 kHz error
+		3 & 4 & 9 & 22 ignored by exp. cond. check.
+		2 ignored, reference phsae delay? At different dl freq.
+	2016-10-04:
+		Laser frequencies don't match
+			Data says 365824.8 & 365808.9
+			dscanmap says 365888.5 & 365872.6
+			I need to look at records to resolve.
+Aside from listed (very serious) discrepencies, the metadata is good.
+I can look at "out.txt", "Analysis.ipnb" and "Results.ipnb" for each to get more information.
+"out.txt" is just static field and fit results, not helpful.
+
+Lets get a better idea of what the big results I have are.
+The "Static Bulk Analysis" has "Results.ipynb", "Analysis.ipynb" and "Pictures.ipynb".
+"Analysis.ipynb" is to look individually at each delay scan, see if the fit and data are decent.
+"Results.ipynb" groups data sets as follows:
+	data856 from "2016-09-22"
+	data840 from "2016-09-23to27"
+	data824 from "2016-09-27"
+	data808 from "2016-09-28"
+	data872w from "2016-10-01"
+	data872s from "2016-10-04"
+These arrays pull form "out.txt" in each folder.
+The primary result plot uses
+	data872w, data856, data840, data824, data808
+	Claims they are all at 44 dB.
+	I should look at what files are actually in "out.txt"
+	Except "out.txt" is taken from "dscanmap.txt"
+	I should look at "2016-09-23to27\dscanmap.txt"
+
+"Pictures.ipynb" produces the plot I've been showing Gallagher
+	Also groups the data into data808, data824, data840, data856, data872w
+	Also claims all of these are at 44 dB
+
+If I just look at the metadata, what groups of conditions do I have?
+Do they contradict what I have record of?
+	"2016-09-22":
+		365872.6 & 365856.7 & 38 dB & ZFIL - 05 GHz & DIL + 02 GHz
+	"2016-09-23":
+		365856.7 & 365840.7 & 44 dB & ZFIL - 21 GHz & DIL - 14 GHz
+	"2016-09-24":
+		365872.6 & 365856.7 & 44 dB & ZFIL - 05 GHz & DIL + 02 GHz
+	"2016-09-26":
+		365856.7 & 365840.7 & 44 dB & ZFIL - 21 GHz & DIL - 14 GHz
+	"2016-09-27":
+		365840.7 & 365824.8 & 44 dB & ZFIL - 37 GHz & DIL - 30 GHz
+	"2016-09-28":
+		365824.8 & 365808.9 & 44 dB & ZFIL - 53 GHz & DIL - 46 GHz
+	"2016-10-01":
+		365888.5 & 365872.6 & 44 dB & ZFIL + 11 GHz & DIL + 18 GHz
+	"2016-10-04":
+		365824.8 & 365808.9 & 32 dB & ZFIL - 53 GHz & DIL - 46 GHz
+Naively, I'd like to look at 44 dB
+	+18, "2016-10-01"
+	+2, "2016-09-24"
+	-14, "2016-09-23" & "2016-09-26"
+	-30, "2016-09-27"
+	-46, "2016-09-28"
+Two ways to go:
+	Look at the picture sources and see what they're doing.
+	Start building data analysis so I can look.
+	
