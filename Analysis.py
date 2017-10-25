@@ -76,6 +76,21 @@ def read_tidy(fname):
     return data
 
 
+def transform_data(data):
+    """For analysis, I want to compare delay in wavelengths against the
+    normalied rydberg signal. These are derived from the read data.
+    Returns DataFrame with "wavelengths" and "nsignal" added."""
+    # wavelengths = 2 * "steps" * m * "MWf" * n / c
+    m = 2.539e-7  # delay stage calibration, meters/step
+    n = 1.0003  # index of refraction of air
+    c = 299792458.0  # Speed of Light, meters/second
+    data["wavelengths"] = 2*data["step"]*m*data["MWf"]*1.0e6*n/c
+    # nsignal = (signal - sbackground)/(norm - nbackground)
+    data["nsignal"] = ((data["signal"] - data["sbackground"])
+                       / (data["norm"] - data["nbackground"]))
+    return data
+
+
 def build_rawdata():
     """Read in a list of folders. Read in data from every "#_delay.txt" file in
     each folder, and interpret the metadata. Save the data frame to
@@ -89,6 +104,8 @@ def build_rawdata():
     for file in files:
         print(file)
         data = data.append(read_tidy(file))
+    # add "wavelengths" and "nsignal" (normalized signal)
+    data = transform_data(data)
     data = data.reset_index(drop=True)  # unique index
     print(data.keys())
     # write so I can use it elsewhere.
@@ -98,17 +115,8 @@ def build_rawdata():
 
 
 # main program starts here
-# build_rawdata()
 data = pd.read_csv("rawdata.txt", sep="\t", index_col=0)  # read in all data
-# transform data adding wavelength and normalized signal.
-datatest = data.iloc[1209]  # random point to look at
-# wavelength = "steps"*m*MWf*n/c
-m = 2.539e-7  # delay stage calibration, meters/step
-n = 1.0003  # index of refraction of air
-# f = testdata["MWf"]
-# print(f)
-
 # plot an individual file
 filelist = data["Filename"].unique()  # get list of files
 mask = data["Filename"] == filelist[0]  # mask all but one file to work on
-# data[mask].plot(x="step", y="signal", kind="scatter")
+data[mask].plot(x="wavelengths", y="nsignal", kind="scatter")
