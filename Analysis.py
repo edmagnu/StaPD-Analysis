@@ -89,8 +89,7 @@ def build_rawdata():
     for file in files:
         print(file)
         data = data.append(read_tidy(file))
-    data = data.reset_index()  # unique index
-    data = data.drop("index", axis=1)  # extra index clolumn
+    data = data.reset_index(drop=True)  # unique index
     print(data.keys())
     # write so I can use it elsewhere.
     data.to_csv("rawdata.txt", sep="\t")
@@ -99,7 +98,17 @@ def build_rawdata():
 
 
 # main program starts here
+# build_rawdata()
 data = pd.read_csv("rawdata.txt", sep="\t", index_col=0)  # read in all data
+# transform data adding wavelength and normalized signal.
+datatest = data.iloc[1209]  # random point to look at
+# wavelength = "steps"*m*MWf*n/c
+m = 2.539e-7  # delay stage calibration, meters/step
+n = 1.0003  # index of refraction of air
+# f = testdata["MWf"]
+# print(f)
+
+# plot an individual file
 filelist = data["Filename"].unique()  # get list of files
 mask = data["Filename"] == filelist[0]  # mask all but one file to work on
-data[mask].plot(x="step", y="signal", kind="scatter")
+# data[mask].plot(x="step", y="signal", kind="scatter")

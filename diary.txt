@@ -217,3 +217,13 @@ Each file needs to be looked at independently.
 From it, fit parameters have to be extracted.
 I should hold a DataFrame separate from the measurements, but with the same metadata.
 First, lets write the master dataframe to a file so I don't reload it every time. "rawdata.txt"
+
+I need to transform the data, as r4ds says.
+Steps must be converted to wavelength using MWf & translation stage calibration.
+signal, sbackground, norm, nbackground need to build nsignal
+This should be done before writing "rawdata.txt"
+
+Start with wavelength.
+Delay stage calibration from "Analysis.ipynb", "wavelength()"
+m = 0.0002539 mm/step = 2.539e-4 mm/step
+c = 299792458 m/s, n_air = 1.0003
