@@ -227,3 +227,23 @@ Start with wavelength.
 Delay stage calibration from "Analysis.ipynb", "wavelength()"
 m = 0.0002539 mm/step = 2.539e-4 mm/step
 c = 299792458 m/s, n_air = 1.0003
+wavelengths = steps*m*MWf*n/c
+"wavelengths" and "nsignal" added to "build_rawdata()"
+
+Now I need to do some modeling.
+y = y0 + a*sin(2*pi*w + phi)
+	a = amplitude
+	w = delay in wavelengths
+	phi = phase
+	y0 = mean
+can guess at fit values:
+	y0 from total mean
+	phi from averaged maximum
+	a from averaged max and min.
+
+Basic model fit function works.
+Manually assign starting parameters.
+"model_func(x, y0, a, phi)" is y = y0 + a*sin(2*pi*x + phi)
+Use "scipy.optimize.curve_fit()" to fit model
+Works fine.
+

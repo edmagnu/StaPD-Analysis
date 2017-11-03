@@ -9,6 +9,8 @@ Created on Sun Oct  8 11:24:19 2017
 # Eric Magnuson, University of Virginia, VA
 
 import pandas as pd
+import numpy as np
+import scipy.optimize
 import os
 
 
@@ -114,9 +116,26 @@ def build_rawdata():
     return data
 
 
+def model_func(x, y0, a, phi):
+    """Sinusoidal plus offset model for delay scan phase dependence.
+    "x" is the delay in wavelengths
+    "y" is the normalized Rydberg signal.
+    Returns model dataframe and fit parameters.
+    """
+    return y0 + a*np.sin(2*np.pi*x + phi)
+
+
 # main program starts here
 data = pd.read_csv("rawdata.txt", sep="\t", index_col=0)  # read in all data
 # plot an individual file
 filelist = data["Filename"].unique()  # get list of files
 mask = data["Filename"] == filelist[0]  # mask all but one file to work on
-data[mask].plot(x="wavelengths", y="nsignal", kind="scatter")
+axes = data[mask].plot(x="wavelengths", y="nsignal", kind="scatter")
+model = pd.DataFrame()
+model["x"] = data[mask]["wavelengths"].sort_values()
+p0 = [0.047, 0.015, 0.4*np.pi]
+popt, pcov = scipy.optimize.curve_fit(
+        model_func, data[mask]["wavelengths"], data[mask]["nsignal"], p0)
+print("y0 = ", popt[0], "a = ", popt[1], "phi = ", popt[2])
+model["y"] = model_func(model["x"], *popt)
+model.plot(x="x", y="y", kind="line", color="black", ax=axes)
