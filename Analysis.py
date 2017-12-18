@@ -130,12 +130,18 @@ data = pd.read_csv("rawdata.txt", sep="\t", index_col=0)  # read in all data
 # plot an individual file
 filelist = data["Filename"].unique()  # get list of files
 mask = data["Filename"] == filelist[0]  # mask all but one file to work on
-axes = data[mask].plot(x="wavelengths", y="nsignal", kind="scatter")
+dtemp = data[mask].sort_values(by=["wavelengths"])
+rave = dtemp[["wavelengths", "nsignal"]].rolling(window=9, center=True)
+rave = rave.mean()
+rave = rave[~np.isnan(rave["nsignal"])]
+axes = dtemp.plot(x="wavelengths", y="nsignal", kind="scatter")
 model = pd.DataFrame()
-model["x"] = data[mask]["wavelengths"].sort_values()
+model["x"] = dtemp["wavelengths"].sort_values()
 p0 = [0.047, 0.015, 0.4*np.pi]
 popt, pcov = scipy.optimize.curve_fit(
-        model_func, data[mask]["wavelengths"], data[mask]["nsignal"], p0)
+        model_func, dtemp["wavelengths"], dtemp["nsignal"], p0)
 print("y0 = ", popt[0], "a = ", popt[1], "phi = ", popt[2])
 model["y"] = model_func(model["x"], *popt)
 model.plot(x="x", y="y", kind="line", color="black", ax=axes)
+rave.plot(x="wavelengths", y="nsignal", kind="line", color="red", ax=axes)
+# print(~np.isnan(rave["nsignal"]))

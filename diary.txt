@@ -247,3 +247,7 @@ Manually assign starting parameters.
 Use "scipy.optimize.curve_fit()" to fit model
 Works fine.
 
+It might also be nice to clean up the "noisy" data with a simple running average.
+np.convolve works, but StackOverflow says it's much slower than np.cumsum.
+Okay, there is of course a pandas solution, DataFrame.rolling(*args).mean()
+I now have raw data as a scatter, a rolling mean as a line, and the model.
