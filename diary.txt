@@ -251,3 +251,38 @@ It might also be nice to clean up the "noisy" data with a simple running average
 np.convolve works, but StackOverflow says it's much slower than np.cumsum.
 Okay, there is of course a pandas solution, DataFrame.rolling(*args).mean()
 I now have raw data as a scatter, a rolling mean as a line, and the model.
+
+I threw the main program into main() and commented it.
+
+The p0 starting parameters are hard coded right now, lets implement my guess strategy.
+y0 = y.mean()
+phi = [(x(ymax) + x(ymin)-0.5)/2 - 0.25] * pi
+a = (ymax - ymin)/2
+This seems to work alright.
+
+Plotting isn't actually something I want to do often.
+Let's tuck it away in a function and move forward.
+Done.
+While we're here, lets make it pretty.
+Important to keep the data source with the plot
+Source file is the title.
+Fit parameters y0, a, phi as well as static field and laser central frequency are "stamped" on the plot.
+When saved, saved as same folder & name as data file, with .pdf instead of .txt
+The saved pdf is actually about the size of the original .txt
+For better or worse, all delay scans now have pdfs of the plots.
+
+The next step is to produce fit parameters for every unique file, and store this with the metadata.
+Okay, I have added "y0", "a", and "phi" columns to the DataFrame and populated them with the fit parameters.
+A final section is added for the fitted model to produce a result based on delay.
+New DataFrame with fit params and fitted model predictions saved to "moddata.txt"
+Lets put this into a function called buid_fits()
+Done
+
+Of course, now that I've done this I can streamline the plotting part, I don't have to redo the model fitting.
+Okay, now assumes model and fit parameters are in data, pulls p0 out.
+You have to force the DataFrame fit values into a float, but now it's done.
+
+Lets make a separate DataFrame to .csv that just has filenames and fit parameters.
+Series.values gives an array of values, not a Series or DataFrame or whatever.
+So Series.values[15] gives an actual number / string / whatever.
+Okay, fits.txt has just one observation per file. All the metadata, the fit parameters, excludes individual data points.
