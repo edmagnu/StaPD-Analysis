@@ -63,7 +63,7 @@ def read_tidy(fname):
     # Combine important metadata and data.
     # Interpret each meta individually, add to all observations
     data["Filename"] = [meta["Filename"]]*data.shape[0]
-    # data["Date"] = [pd.to_datetime(meta["Date"])]*data.shape[0]
+    data["Date"] = [pd.to_datetime(meta["Date"])]*data.shape[0]
     # strip unit off numerical value with ".split()"
     data["DL-Pro"] = [float(meta["DL-Pro"].split(" ")[0])]*data.shape[0]
     data["DL-100"] = [float(meta["DL-100"].split(" ")[0])]*data.shape[0]
@@ -72,7 +72,7 @@ def read_tidy(fname):
     data["MWf"] = [float(meta["MWf"].split(" ")[0])]*data.shape[0]
     data["Attn"] = [float(meta["Attn"].split(" ")[0])]*data.shape[0]
     # reorder DataFrame columns.
-    key_order = ["Filename", "DL-Pro", "DL-100", "Static", "MWOn",
+    key_order = ["Filename", "Date", "DL-Pro", "DL-100", "Static", "MWOn",
                  "MWf", "Attn", "i", "step", "norm", "nbackground", "signal",
                  "sbackground"]
     data = data[key_order]
@@ -145,7 +145,7 @@ def model_p0(x, y):
     return [y0, a, phi]
 
 
-def plot_dscan(data, filename, save=False, close=False):
+def plot_dscan(data, filename, save=False, close=True):
     """Given a DataFrame with multiple delay scans, select one by the
     filename. Plot the data, running average, and a model fit. Assumes data
     comes with "wavelenth", "nsignal", "y0", "a", "phi", and "model".
@@ -158,8 +158,8 @@ def plot_dscan(data, filename, save=False, close=False):
     rave = rave.mean()
     rave = rave[~np.isnan(rave["nsignal"])]
     # extract model p0 [y0, a, phi]
-    p0 = np.array([float(data["y0"][[0]]), float(data["a"][[0]]),
-                   float(data["phi"][[0]])])
+    popt = np.array([data["y0"].values[0], data["a"].values[0],
+                     data["phi"].values[0]])
     # plot the data, model, and rolling average
     axes = data.plot(x="wavelengths", y="nsignal", kind="scatter",
                      label="data")
@@ -171,8 +171,8 @@ def plot_dscan(data, filename, save=False, close=False):
     fcent = ((data["DL-Pro"].unique()[0] + data["DL-100"].unique()[0])/2
              - 365869.6)
     static = data["Static"].unique()[0]*0.1*0.72
-    stamp = "y0 = {:2.3f}\na = {:2.3f}\nphi = {:2.2f}".format(p0[0], p0[1],
-                                                              p0[2]/(2*np.pi))
+    stamp = "y0 = {:2.3f}\na = {:2.3f}\nphi = {:2.2f}".format(
+            popt[0], popt[1], popt[2]/(2*np.pi))
     stamp = stamp + "\nf_cent = {:2.0f} GHz".format(fcent)
     stamp = stamp + "\nF_st = {:2.2f} mV/cm".format(static)
     plt.text(0.05, 0.05,
@@ -181,6 +181,7 @@ def plot_dscan(data, filename, save=False, close=False):
     axes.set_xlabel("Delay (MW periods)")
     axes.set_ylabel("Rydberg Signal")
     axes.set_title(filename)
+    axes.legend(loc=4)
     # plt.grid(True)
     plt.tight_layout()
     if save is True:
@@ -196,7 +197,13 @@ def build_fits(data):
     model_func(), and adds fit parameters y0, a and phi to the DataFrame.
     Then, add a column to the data frame of the fitted values.
     Save the new data frame to "moddata.txt"
-    Returns data DataFrame with "y0", "a", "phi" and "model" keys added.
+    Produce a fits DataFrame that has one observation per file, including all
+    of the metadata and fit parameters, but no individual delay scan
+    measurements.
+    data is DataFrame with "y0", "a", "phi" and "model" keys added
+    fits is DataFrame with just metadata and fit parameters, one observation
+    per file.
+    Returns data, fits
     """
     # add columns of NaN for each new key.
     dl = data.shape[0]
@@ -224,14 +231,14 @@ def build_fits(data):
         data.loc[mask, "a"] = popt[1]
         data.loc[mask, "phi"] = popt[2]
         # use original data, not the sorted data
-        data.loc[mask, "model"] = model_func(data[mask]["wavelengths"], *p0)
+        data.loc[mask, "model"] = model_func(data[mask]["wavelengths"], *popt)
         # build fits DataFrame
         keylist = ["Filename", "DL-Pro", "DL-100", "Static", "MWOn", "MWf",
                    "Attn"]
-        fit = data.iloc[0][keylist]
-        fit["y0"] = p0[0]
-        fit["a"] = p0[1]
-        fit["phi"] = p0[2]
+        fit = dsort.iloc[0][keylist]
+        fit["y0"] = popt[0]
+        fit["a"] = popt[1]
+        fit["phi"] = popt[2]
         fits = fits.append(fit)
     # force fits key order
     fits = fits[keylist + ["y0", "a", "phi"]]
@@ -241,13 +248,109 @@ def build_fits(data):
     return data, fits
 
 
+def massage_amp_phi(fsort, gate):
+    """Given a series of fit phases, fix the phases and amplitudes so that all
+    phases fall between [0, pi] + gate.
+    Returns a fits DataFrame with modified "phi"
+    """
+    # force all amps to be positive
+    mask = (fsort["a"] < 0)
+    fsort.loc[mask, "a"] = -fsort[mask]["a"]
+    fsort.loc[mask, "phi"] = fsort[mask]["phi"] + np.pi
+    # force phases between 0 and 2pi
+    mask = (fsort["phi"] > 2*np.pi)
+    fsort.loc[mask, "phi"] = fsort[mask]["phi"] - 2*np.pi
+    mask = (fsort["phi"] < 0)
+    fsort.loc[mask, "phi"] = fsort[mask]["phi"] + 2*np.pi
+    # collapse phases to [0, pi] + gate
+    gate = np.pi
+    mask = (fsort["phi"] > gate) & (fsort["phi"] <= (gate + np.pi))
+    fsort.loc[mask, "phi"] = fsort[mask]["phi"] - np.pi
+    fsort.loc[mask, "a"] = -fsort[mask]["a"]
+    mask = (fsort["phi"] > (gate + np.pi))
+    fsort.loc[mask, "phi"] = fsort[mask]["phi"] - 2*np.pi
+    return fsort
+
+
+def dil_p2():
+    """
+    Selects "fits.txt" data with lasers at DIL +2GHz and Attn = 38.0
+    (happens to all be 2016-09-22) and plots Static vs. fit parameters "a, phi"
+    Uses massage_amp_phi() before plotting to fix "a, phi".
+    Returns DataFrame "fsort" that is just the plotted observations.
+    """
+    # read in all data wth fit info
+    # data = pd.read_csv("moddata.txt", sep="\t", index_col=0)
+    fits = pd.read_csv("fits.txt", sep="\t", index_col=0)
+    # mask out DIL + 2 GHz and Attn = 38.0
+    mask = (fits["DL-Pro"] == 365872.6) & (fits["Attn"] == 38.0)
+    fsort = fits[mask].sort_values(by=["Static"])
+    gate = np.pi
+    fsort = massage_amp_phi(fsort, gate)
+    print(fsort)
+    # plot
+    fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True, sharey=False,
+                             figsize=(11, 8.5))
+    fsort.plot(x="Static", y="a", kind="scatter", ax=axes[0])
+    fsort.plot(x="Static", y="phi", kind="scatter", ax=axes[1])
+    axes[1].set_yticks([-np.pi/2, 0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi])
+    axes[1].set_yticklabels([r"$-\pi/2$", "0", r"$\pi/2$", r"$\pi$",
+                             r"$3\pi/2$", r"$2\pi$"])
+    for i in np.arange(gate - np.pi, gate + np.pi, np.pi):
+        axes[1].axhline(i, color="black")
+    # make it pretty
+    axes[1].set_ylabel("Phase (rad)")
+    axes[1].set_xlabel("Pulsed Voltage (V)")
+    axes[0].set_ylabel("Amplitude (P. of Excited)")
+    axes[1].grid(True)
+    axes[0].grid(True)
+    plt.suptitle("DIL + 2 GHz")
+    return fsort
+
+
 # main program starts here
 def main():
-    """Read in raw data Add fit parameters and model values and save."""
+    """Read data and model fits."""
     # read in all data with fit info
-    data = pd.read_csv("rawdata.txt", sep="\t", index_col=0)
-    data, fits = build_fits(data)
+    data = pd.read_csv("moddata.txt", sep="\t", index_col=0)
+    fits = pd.read_csv("fits.txt", sep="\t", index_col=0)
+    # mask out just DIL + 2 GHz data.
+    fmask = fits["DL-Pro"] == 365872.6
+    fmask = fmask & (fits["Attn"] == 38.0)
+    fsort = fits[fmask].sort_values(by=["Static"])
+    # force all amps to be positive
+    mask = (fsort["a"] < 0)
+    fsort.loc[mask, "a"] = -fsort[mask]["a"]
+    fsort.loc[mask, "phi"] = fsort[mask]["phi"] + np.pi
+    # force phases between 0 and 2pi
+    mask = (fsort["phi"] > 2*np.pi)
+    fsort.loc[mask, "phi"] = fsort[mask]["phi"] - 2*np.pi
+    mask = (fsort["phi"] < 0)
+    fsort.loc[mask, "phi"] = fsort[mask]["phi"] + 2*np.pi
+    # collapse phases to [0, pi] + gate
+    gate = np.pi
+    mask = (fsort["phi"] > gate) & (fsort["phi"] <= (gate + np.pi))
+    fsort.loc[mask, "phi"] = fsort[mask]["phi"] - np.pi
+    fsort.loc[mask, "a"] = -fsort[mask]["a"]
+    mask = (fsort["phi"] > (gate + np.pi))
+    fsort.loc[mask, "phi"] = fsort[mask]["phi"] - 2*np.pi
+    # plot
+    fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True, sharey=False,
+                             figsize=(11, 8.5))
+    fsort.plot(x="Static", y="a", kind="scatter", ax=axes[0])
+    fsort.plot(x="Static", y="phi", kind="scatter", ax=axes[1])
+    axes[1].set_yticks([-np.pi/2, 0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi])
+    axes[1].set_yticklabels([r"$-\pi/2$", "0", r"$\pi/2$", r"$\pi$",
+                             r"$3\pi/2$", r"$2\pi$"])
+    for i in np.arange(gate - np.pi, gate + np.pi, np.pi):
+        axes[1].axhline(i, color="black")
+    # make it pretty
+    axes[1].set_ylabel("Phase (rad)")
+    axes[1].set_xlabel("Pulsed Voltage (V)")
+    axes[0].set_ylabel("Amplitude (P. of Excited)")
+    axes[1].grid(True)
+    axes[0].grid(True)
     return data, fits
 
 
-data, fits = main()
+fsort = dil_p2()

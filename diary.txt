@@ -286,3 +286,57 @@ Lets make a separate DataFrame to .csv that just has filenames and fit parameter
 Series.values gives an array of values, not a Series or DataFrame or whatever.
 So Series.values[15] gives an actual number / string / whatever.
 Okay, fits.txt has just one observation per file. All the metadata, the fit parameters, excludes individual data points.
+
+Okay, now I have everything I need, I need to start thinking about the figures that are interesting.
+Lets start simple, the above the limit phase dependence as a function of field.
+Above the limit is
+	f_cent = DIL + 2
+	f_cent = ZFIL - 5
+	DL-Pro = ZFIL + 3
+	DL-Pro = 365872 GHz
+
+This failed in a really big way.
+Looking at individual plots of data, the fits are COMPLETELY wrong. What happened?
+Everything was recorded with p0 (initial guess), not popt (fitted result).
+Rerun...
+Fits look good, but the "stamped" fit parameters are all nan.
+Fixed, a matter of using values to reduce a Series to actual numbers
+I had to hard code legend loc=4 to avoid the "stamp" overlapping the legend in some instances.
+
+Lets retry the simple DIL + 2 GHz plot
+Okay, it looks much better this time.
+But I need some systematic way to decide +/- amplitude.
+The important point is that
+	sin(x+pi) = -sin(x)
+	sin(x+2*pi) = sin(x)
+So first, lets make sure every phi is [0, 2pi]
+Note, DataFrame.loc[mask, "phi"] is fine, DataFrame[mask, "phi"] not fine. Use DataFrame[mask]["phi"]
+Okay, confining to [0, 2pi] is done.
+Now to force [0, pi] + phi_gate
+From the graph, it looks like pi*3/4 is right.
+	[0, 3/4]pi -> phi = phi, amp = amp
+	[3/4, 7/4]pi -> phi = phi - pi, amp = -amp
+	[7/4, ]pi -> phi = phi - 2*pi, amp = amp
+This fails. I think I need to start with all a > 0 to get a sense of the right gate.
+	a < 0 -> phi = phi - np.pi
+	phi = phi % 2*np.pi
+Okay, now barring a couple "bad apples", the data looks good.
+Eventually I should consider how to do this automatically, some kind of fitting.
+
+I need to look back and see why the "bad apples" had been excluded.
+It occurs to me I'm just selecting by frequency, the offending points could be other days?
+Dates are not part of the "fits" DataFrame, I'll add it back in.
+But otherwise, it looks like 09/22, 09/23, and 09/24 are included.
+
+I should make a flow chart for how the functions are used in the analysis.
+
+Huh, the date is actually not in "data" DataFrame either. Should be easy?
+"read_tidy()" is where data & metadata meet, and it doesn't include date.
+Alternately, I can strip from the name, but that's less... tidy.
+Oh, it's already there in a commented out line.
+
+The offending data is 2016-09-24/2_delay.txt and 3_delay.txt, 9_delay.txt, 10_delay.txt
+Okay, looking at "Static Bulk Analysis" "Results.ipynb", it's clear 2016-09-22 is the proper source, ignore everything else.
+Actually, filtering Attn=38.0 (remember the +6) accomplishes this.
+So now I have a very nice picture of DL-Pro = 365872.6 GHz, or DIL + 2 GHz.
+Now that I have this, lets put it in a function.
