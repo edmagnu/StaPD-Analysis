@@ -340,3 +340,92 @@ Okay, looking at "Static Bulk Analysis" "Results.ipynb", it's clear 2016-09-22 i
 Actually, filtering Attn=38.0 (remember the +6) accomplishes this.
 So now I have a very nice picture of DL-Pro = 365872.6 GHz, or DIL + 2 GHz.
 Now that I have this, lets put it in a function.
+
+Moving on to the DIL - 14 GHz, this is DL-Pro = 365856.7 GHz
+Setting the gate to 3/4 pi gives phi's not in the gate. Why? Something wrong with massage_phi_amp()
+gate was hardcoded, just deleted that and it's fixed.
+There's some ugly data points:
+	-1000, 0.001	2016-09-23\12_delay.txt
+	+1000, 0.001	2016-09-23\11_delay.txt
+	+ 200, 0.002	2016-09-23\16_delay.txt
+This is 2016-09-23to27, the notebook says everything is from the dscanmaps.
+16 and 17 are excluded by comment (last data runs)
+11 and 12 are excluded.. it's not clear why
+What other files are excluded in dscanmaps from other folders?
+Every 2016-09-24 is included
+2016-09-26: 8_delay.txt and 9_delay.txt excluded, "bias voltages way off"
+	This gets rid of two points that were very far off the trend.
+2016-09-27: 7_delay.txt excluded, right after laser frequency change.
+	15_delay.txt is excluded, a repeat 0, perhaps after rechecking something?
+	Not in this data set.
+Now, aside from repeated +/- 100 mV runs, it looks very clean. Pack it up for now.
+In the future, I should either decide to exclude some 100 mV, or average them.
+	Multiple points looks kind of sloppy, makes the plot more confusing.
+
+THERE MIGHT BE SOME ATTN RECORD KEEPING ISSUES WITH 2016-09-22
+dscanmaps show all at 44, not 38. This matches lab records.
+
+Moving on to DIL - 30 GHz, DL-Pro = 365840.7 GHz
+This is 2016-09-27, excluding 7 and 15_delay.txt helps but not essential.
+Picture looks good with the obvious 3pi/4 gate.
+
+I should do DIL + 18 GHz and DIL - 56 GHz as well.
+The data is not as good, but I do have it.
+All the DIL - 46 (!!!) are 2016-09-28
+12 through 39 EXCEPT 27 is used.
+Okay, DIL - 46 at 44 dB is done.
+27 is a repeat 0, 2 through 11 are a prior run with bad conditions.
+2016-10-01\2_delay.txt is from a different day.
+
+In DIL + 18 GHz
+All from 2016-10-01, only 3, 4, 9 and 22 excluded
+massage_amp_phi() is broken again, this time for 5pi/4
+Okay, I sat down and mapped out how it aught to work and fixed it.
+Now handles cases [0, gate-pi], [gate-pi, gate] and [gate, 2pi], looks good.
+DIL + 18, +2, -14, -30, -46 all set up in their own functions.
+I should check the filelists against the dscan maps.
+
+But first, lets go back to 2016-09-22.
+File metadata says Attn=38, dscanmap says 44
+It looks like I took two data points at 38 to compare with the prior day,
+	then I forgot to update the metadata as I copied and pasted going back to
+	measurements at 44 dB.
+metadata_cleaner.py is responsible for building all the metadata from original to modified files.
+typo_fix() has a list of special exemptions for specific issues.
+I should add all the attn fixes here, and leave a comment for justification.
+10 through 26_delay.txt need to be changed so "Attn" is 44, not 38
+
+Okay, fixed. But now I need to redo all the fits and raw and mod data...
+data = build_rawdata() and data, fits = build_fits(data)
+build_fits() is broken, thinks np (numpy) is a float?
+Turns out for some reason the Series being passed to curve_fit() are dtype=objects.
+Simplest thing to do is add dsort["wavelenghts"].astype(float).
+This works. Ideally, I should make the DataFrames with proper data types.
+
+Checking back with p2, it's messed up.
+This is a tumbling can of worms, now there are many 2016-09-24 included.
+This is another case of mis-recording, dscanmap is recorded differently.
+	File says DL-Pro @ 365872.6 GHz, DL-100 @ 365856.7 GHz
+	dscanmap says DL-Pro @ 365856.7 GHz, DL-100 @ 365840.7 GHz
+All the surrounding data is recorded as 365856.7, I trust it.
+The file metadata has been fixed by adding to typo_fix()
+ran build_rawdata() and build_fits() again to redo fits.txt and moddata.txt
+
+DIL+2 looks good again, except one point at static = +100 mV
+Two points at +/- 100 mV from 2016-09-23, 3 and 4_delay.txt
+First two runs to compare to prior day's work.
+5 discarded, reset at 7_delay.txt for the proper dataset.
+So just exclude 2016-09-23\3 & 4_delay.txt
+dil_p2() looks good now.
+
+Now, check against the dscanmaps.
+dil_p18() looks good
+dil_p2() looks good
+dil_m14()
+	2016-09-23\\5_delay.txt was before an adjustment, exclude.
+	2016-09-24 looks good
+	2016-09-26 looks good
+	2016-09-27 looks good
+	All good
+dil_m30() looks good
+dil_m46() looks good

@@ -222,16 +222,18 @@ def build_fits(data):
         # data is often triangle in delay, sort it
         dsort = data[mask].sort_values(by=["wavelengths"])
         # fit to sinusoidal model_func()
-        p0 = model_p0(dsort["wavelengths"], dsort["nsignal"])  # bestt guess
+        p0 = model_p0(dsort["wavelengths"], dsort["nsignal"])  # best guess
         # get fit parameters
         popt, pcov = scipy.optimize.curve_fit(
-                model_func, dsort["wavelengths"], dsort["nsignal"], p0)
+                model_func, dsort["wavelengths"].astype(float),
+                dsort["nsignal"].astype(float), p0)
         # fill in fit parameters and model nsignal
         data.loc[mask, "y0"] = popt[0]
         data.loc[mask, "a"] = popt[1]
         data.loc[mask, "phi"] = popt[2]
         # use original data, not the sorted data
-        data.loc[mask, "model"] = model_func(data[mask]["wavelengths"], *popt)
+        data.loc[mask, "model"] = model_func(
+                data[mask]["wavelengths"].astype(float), *popt)
         # build fits DataFrame
         keylist = ["Filename", "DL-Pro", "DL-100", "Static", "MWOn", "MWf",
                    "Attn"]
@@ -262,36 +264,39 @@ def massage_amp_phi(fsort, gate):
     fsort.loc[mask, "phi"] = fsort[mask]["phi"] - 2*np.pi
     mask = (fsort["phi"] < 0)
     fsort.loc[mask, "phi"] = fsort[mask]["phi"] + 2*np.pi
-    # collapse phases to [0, pi] + gate
-    gate = np.pi
-    mask = (fsort["phi"] > gate) & (fsort["phi"] <= (gate + np.pi))
+    # phases above gate
+    mask = (fsort["phi"] > gate) & (fsort["phi"] <= 2*np.pi)
     fsort.loc[mask, "phi"] = fsort[mask]["phi"] - np.pi
     fsort.loc[mask, "a"] = -fsort[mask]["a"]
-    mask = (fsort["phi"] > (gate + np.pi))
-    fsort.loc[mask, "phi"] = fsort[mask]["phi"] - 2*np.pi
+    # phases below gate - pi
+    mask = (fsort["phi"] < (gate - np.pi)) & (fsort["phi"] > 0)
+    fsort.loc[mask, "phi"] = fsort[mask]["phi"] + np.pi
+    fsort.loc[mask, "a"] = -fsort[mask]["a"]
     return fsort
 
 
 def dil_p2():
-    """
-    Selects "fits.txt" data with lasers at DIL +2GHz and Attn = 38.0
+    """Selects "fits.txt" data with lasers at DIL +2GHz and Attn = 38.0
     (happens to all be 2016-09-22) and plots Static vs. fit parameters "a, phi"
     Uses massage_amp_phi() before plotting to fix "a, phi".
-    Returns DataFrame "fsort" that is just the plotted observations.
-    """
-    # read in all data wth fit info
-    # data = pd.read_csv("moddata.txt", sep="\t", index_col=0)
+    Returns DataFrame "fsort" that is just the plotted observations."""
+    # read in all fits
     fits = pd.read_csv("fits.txt", sep="\t", index_col=0)
-    # mask out DIL + 2 GHz and Attn = 38.0
-    mask = (fits["DL-Pro"] == 365872.6) & (fits["Attn"] == 38.0)
+    # mask out DIL + 2 GHz and Attn = 44.0
+    mask = (fits["DL-Pro"] == 365872.6) & (fits["Attn"] == 44)
     fsort = fits[mask].sort_values(by=["Static"])
+    # fsort = fits[mask]
+    # force phases [-pi, 0] + gate
     gate = np.pi
     fsort = massage_amp_phi(fsort, gate)
-    print(fsort)
+    # manually exclude bad data runs
+    excluded = ["2016-09-23\\3_delay.txt", "2016-09-23\\4_delay.txt"]
+    for fname in excluded:
+        fsort = fsort[fsort["Filename"] != fname]
     # plot
     fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True, sharey=False,
                              figsize=(11, 8.5))
-    fsort.plot(x="Static", y="a", kind="scatter", ax=axes[0])
+    fsort.plot(x="Static", y="a", style="-o", ax=axes[0])
     fsort.plot(x="Static", y="phi", kind="scatter", ax=axes[1])
     axes[1].set_yticks([-np.pi/2, 0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi])
     axes[1].set_yticklabels([r"$-\pi/2$", "0", r"$\pi/2$", r"$\pi$",
@@ -309,48 +314,167 @@ def dil_p2():
 
 
 # main program starts here
-def main():
-    """Read data and model fits."""
-    # read in all data with fit info
-    data = pd.read_csv("moddata.txt", sep="\t", index_col=0)
+def dil_m14():
+    """Selects "fits.txt" data with lasers at DIL -14 GHz (from 2016-09-23to27)
+    and plots Static vs. fit parameters "a, phi".
+    Uses massage_amp_phi() before plotting to fix "a, phi".
+    Manually excludes some bad data runs.
+    Returns DataFrame "fsort" that is just the plotted observations."""
+    # read in all fits
     fits = pd.read_csv("fits.txt", sep="\t", index_col=0)
-    # mask out just DIL + 2 GHz data.
-    fmask = fits["DL-Pro"] == 365872.6
-    fmask = fmask & (fits["Attn"] == 38.0)
-    fsort = fits[fmask].sort_values(by=["Static"])
-    # force all amps to be positive
-    mask = (fsort["a"] < 0)
-    fsort.loc[mask, "a"] = -fsort[mask]["a"]
-    fsort.loc[mask, "phi"] = fsort[mask]["phi"] + np.pi
-    # force phases between 0 and 2pi
-    mask = (fsort["phi"] > 2*np.pi)
-    fsort.loc[mask, "phi"] = fsort[mask]["phi"] - 2*np.pi
-    mask = (fsort["phi"] < 0)
-    fsort.loc[mask, "phi"] = fsort[mask]["phi"] + 2*np.pi
-    # collapse phases to [0, pi] + gate
-    gate = np.pi
-    mask = (fsort["phi"] > gate) & (fsort["phi"] <= (gate + np.pi))
-    fsort.loc[mask, "phi"] = fsort[mask]["phi"] - np.pi
-    fsort.loc[mask, "a"] = -fsort[mask]["a"]
-    mask = (fsort["phi"] > (gate + np.pi))
-    fsort.loc[mask, "phi"] = fsort[mask]["phi"] - 2*np.pi
+    # mask out just DIL - 14 GHz
+    mask = (fits["DL-Pro"] == 365856.7)
+    fsort = fits[mask].sort_values(by=["Static"])
+    # force phi = [0, pi] + gate, correct amps
+    gate = 3*np.pi/4
+    fsort = massage_amp_phi(fsort, gate)
+    # manually exclude bad data runs
+    excluded = ["2016-09-23\\5_delay.txt", "2016-09-23\\11_delay.txt",
+                "2016-09-23\\12_delay.txt", "2016-09-23\\16_delay.txt",
+                "2016-09-23\\17_delay.txt", "2016-09-26\\8_delay.txt",
+                "2016-09-26\\9_delay.txt"]
+    for fname in excluded:
+        fsort = fsort[fsort["Filename"] != fname]
     # plot
     fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True, sharey=False,
                              figsize=(11, 8.5))
-    fsort.plot(x="Static", y="a", kind="scatter", ax=axes[0])
+    fsort.plot(x="Static", y="a", style="-o", ax=axes[0])
     fsort.plot(x="Static", y="phi", kind="scatter", ax=axes[1])
     axes[1].set_yticks([-np.pi/2, 0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi])
     axes[1].set_yticklabels([r"$-\pi/2$", "0", r"$\pi/2$", r"$\pi$",
                              r"$3\pi/2$", r"$2\pi$"])
     for i in np.arange(gate - np.pi, gate + np.pi, np.pi):
         axes[1].axhline(i, color="black")
-    # make it pretty
     axes[1].set_ylabel("Phase (rad)")
     axes[1].set_xlabel("Pulsed Voltage (V)")
     axes[0].set_ylabel("Amplitude (P. of Excited)")
     axes[1].grid(True)
     axes[0].grid(True)
+    plt.suptitle("DIL - 14 GHz")
+    return fsort
+
+
+def dil_m30():
+    """Selects "fits.txt" data with lasers at DIL -30 GHz (from 2016-09-27)
+    and plots Static vs. fit parameters "a, phi".
+    Uses massage_amp_phi() before plotting to fix "a, phi".
+    Manually excludes some bad data runs.
+    Returns DataFrame "fsort" that is just the plotted observations."""
+    # read in all fits
+    fits = pd.read_csv("fits.txt", sep="\t", index_col=0)
+    # mask out just DIL - 30 GHz
+    mask = (fits["DL-Pro"] == 365840.7)
+    fsort = fits[mask].sort_values(by=["Static"])
+    # force phi = [0, pi] + gate, correct amps
+    gate = 3*np.pi/4
+    fsort = massage_amp_phi(fsort, gate)
+    # manually exclude bad data runs
+    excluded = ["2016-09-27\\7_delay.txt", "2016-09-27\\15_delay.txt"]
+    for fname in excluded:
+        fsort = fsort[fsort["Filename"] != fname]
+    # plot
+    fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True, sharey=False,
+                             figsize=(11, 8.5))
+    fsort.plot(x="Static", y="a", style="-o", ax=axes[0])
+    fsort.plot(x="Static", y="phi", kind="scatter", ax=axes[1])
+    axes[1].set_yticks([-np.pi/2, 0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi])
+    axes[1].set_yticklabels([r"$-\pi/2$", "0", r"$\pi/2$", r"$\pi$",
+                             r"$3\pi/2$", r"$2\pi$"])
+    for i in np.arange(gate - np.pi, gate + np.pi, np.pi):
+        axes[1].axhline(i, color="black")
+    axes[1].set_ylabel("Phase (rad)")
+    axes[1].set_xlabel("Pulsed Voltage (V)")
+    axes[0].set_ylabel("Amplitude (P. of Excited)")
+    axes[1].grid(True)
+    axes[0].grid(True)
+    plt.suptitle("DIL - 30 GHz")
+    return fsort
+
+
+def dil_m46():
+    # read in all fits
+    fits = pd.read_csv("fits.txt", sep="\t", index_col=0)
+    # mask out just DIL- 46 GHz
+    mask = (fits["DL-Pro"] == 365824.8) & (fits["Attn"] == 44.0)
+    fsort = fits[mask].sort_values(by=["Static"])
+    # fsort = fits[mask]
+    # force phi = [0, pi] + ate, correct amps
+    gate = np.pi
+    fsort = massage_amp_phi(fsort, gate)
+    # manually exclude bad data runs
+    excluded = ["2016-09-28\\2_delay.txt", "2016-09-28\\3_delay.txt",
+                "2016-09-28\\4_delay.txt", "2016-09-28\\5_delay.txt",
+                "2016-09-28\\6_delay.txt", "2016-09-28\\7_delay.txt",
+                "2016-09-28\\8_delay.txt", "2016-09-28\\9_delay.txt",
+                "2016-09-28\\10_delay.txt", "2016-09-28\\11_delay.txt",
+                "2016-09-28\\27_delay.txt", "2016-10-01\\2_delay.txt"]
+    for fname in excluded:
+        fsort = fsort[fsort["Filename"] != fname]
+    # plot
+    fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True, sharey=False,
+                             figsize=(11, 8.5))
+    fsort.plot(x="Static", y="a", style="-o", ax=axes[0])
+    fsort.plot(x="Static", y="phi", kind="scatter", ax=axes[1])
+    axes[1].set_yticks([-np.pi/2, 0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi])
+    axes[1].set_yticklabels([r"$-\pi/2$", "0", r"$\pi/2$", r"$\pi$",
+                             r"$3\pi/2$", r"$2\pi$"])
+    for i in np.arange(gate - np.pi, gate + np.pi, np.pi):
+        axes[1].axhline(i, color="black")
+    axes[1].set_ylabel("Phase (rad)")
+    axes[1].set_xlabel("Pulsed Voltage (V)")
+    axes[0].set_ylabel("Amplitude (P. of Excited)")
+    axes[1].grid(True)
+    axes[0].grid(True)
+    plt.suptitle("DIL - 46 GHz")
+    return fsort
+
+
+def dil_p18():
+    # read in all fits
+    fits = pd.read_csv("fits.txt", sep="\t", index_col=0)
+    # mask out just DIL + 18 GHz
+    mask = (fits["DL-Pro"] == 365888.5) & (fits["Attn"] == 44.0)
+    fsort = fits[mask].sort_values(by=["Static"])
+    # fsort = fits[mask]
+    # force phi = [0, pi] + ate, correct amps
+    gate = 5*np.pi/4
+    fsort = massage_amp_phi(fsort, gate)
+    # manually exclude bad data runs
+    excluded = ["2016-10-01\\3_delay.txt", "2016-10-01\\4_delay.txt",
+                "2016-10-01\\9_delay.txt", "2016-10-01\\22_delay.txt"]
+    for fname in excluded:
+        fsort = fsort[fsort["Filename"] != fname]
+    # plot
+    fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True, sharey=False,
+                             figsize=(11, 8.5))
+    fsort.plot(x="Static", y="a", style="-o", ax=axes[0])
+    fsort.plot(x="Static", y="phi", kind="scatter", ax=axes[1])
+    axes[1].set_yticks([-np.pi/2, 0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi])
+    axes[1].set_yticklabels([r"$-\pi/2$", "0", r"$\pi/2$", r"$\pi$",
+                             r"$3\pi/2$", r"$2\pi$"])
+    for i in np.arange(gate - np.pi, gate + np.pi, np.pi):
+        axes[1].axhline(i, color="black")
+    axes[1].set_ylabel("Phase (rad)")
+    axes[1].set_xlabel("Pulsed Voltage (V)")
+    axes[0].set_ylabel("Amplitude (P. of Excited)")
+    axes[1].grid(True)
+    axes[0].grid(True)
+    plt.suptitle("DIL + 18 GHz")
+    return fsort
+
+
+def build_datasets():
+    """Build complete data DataFrame and fits DataFrame
+    Returns data, fits, both DataFrames"""
+    data = build_rawdata()
+    data, fits = build_fits(data)
     return data, fits
 
 
-fsort = dil_p2()
+# data = build_rawdata()
+# data, fits = build_fits(data)
+# fsort = dil_p18()
+# fsort = dil_p2()
+# fsort = dil_m14()
+# fsort = dil_m30()
+# fsort = dil_m46()

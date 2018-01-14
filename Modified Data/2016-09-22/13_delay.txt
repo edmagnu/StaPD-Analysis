@@ -6,7 +6,7 @@
 # Static	50 mV Pulsed
 # MWOn	On
 # MWf	15932.0 MHz
-# Attn	38 dB
+# Attn	44 dB
 # FixedAttn	6 dB
 # B2	B2 = T2 + 2.050 us
 # HP214B	HP 214B FIP at 5.5 on 100V setting ; Applied to Top ; Mesh & Vin of MCP @ +25V ; Vout of MCP @ +2025 V

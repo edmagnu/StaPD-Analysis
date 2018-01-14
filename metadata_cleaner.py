@@ -86,6 +86,44 @@ def typo_fix(metadata):
             meta = "\t".join(meta)
             metadata["DLPro"] = meta
             print(metadata["DLPro"])
+    # 2016-09-22, many files were misrecorded as Attn = 38, not 44 dB
+    # dscanmap records 44 dB
+    # Looks like I made two 38 dB measurements to check against prior day.
+    # Then forgot to change the metadata back to 44 as I copied and pasted.
+    # list of the files with metadata errors
+    exceptions = ["2016-09-22\\10_delay.txt", "2016-09-22\\11_delay.txt",
+                  "2016-09-22\\12_delay.txt", "2016-09-22\\13_delay.txt",
+                  "2016-09-22\\14_delay.txt", "2016-09-22\\15_delay.txt",
+                  "2016-09-22\\16_delay.txt", "2016-09-22\\17_delay.txt",
+                  "2016-09-22\\18_delay.txt", "2016-09-22\\19_delay.txt",
+                  "2016-09-22\\20_delay.txt", "2016-09-22\\21_delay.txt",
+                  "2016-09-22\\22_delay.txt", "2016-09-22\\23_delay.txt",
+                  "2016-09-22\\24_delay.txt", "2016-09-22\\25_delay.txt",
+                  "2016-09-22\\26_delay.txt"]
+    if test in exceptions:
+        print(test, "\tFixed")
+        meta = metadata["Attn"]
+        meta = meta.replace("38", "44")
+        metadata["Attn"] = meta
+        print(metadata["Attn"])
+    # 2016-09-24 has DL-Pro and DL-100 recoded as DIL + 2, not DIL-14.
+    # Surrounded by DIL-14 and recorded in dscanmap as DIL-14
+    exceptions = ["2016-09-24\\2_delay.txt", "2016-09-24\\3_delay.txt",
+                  "2016-09-24\\4_delay.txt", "2016-09-24\\5_delay.txt",
+                  "2016-09-24\\6_delay.txt", "2016-09-24\\7_delay.txt",
+                  "2016-09-24\\8_delay.txt", "2016-09-24\\9_delay.txt",
+                  "2016-09-24\\10_delay.txt", "2016-09-24\\11_delay.txt",
+                  "2016-09-24\\12_delay.txt"]
+    if test in exceptions:
+        print(test, "\tFixed")
+        meta = metadata["DLPro"]
+        meta = meta.replace("365872.6", "365856.7")
+        metadata["DLPro"] = meta
+        print(metadata["DLPro"])
+        meta = metadata["DL100"]
+        meta = meta.replace("365856.7" ,"365840.7")
+        metadata["DL100"] = meta
+        print(metadata["DL100"])
     print("----- Typo Fix -----")
     return metadata
 
@@ -117,7 +155,7 @@ def metadata_cleaner(fname):
                 date = line[2:12]  # strip to just yyyy-mm-dd
                 metadate = "# Date\t" + date + "\n"
                 metadata["Date"] = metadate
-                # Title
+            # Title
             elif ("DL-Pro" in line) & ("DL-100" in line) & ("delay" in line):
                 print("It's a title!")
                 metatitle = "# Title\t" + line[2:]
@@ -251,9 +289,11 @@ def metadata_cleaner(fname):
                 if (line[0] != "#") & (line[:9] != "# i, step"):
                     new.write(line.strip() + "\n")
 
+
 # main program starts here
 # File location
-# path = "." + "\\Modified Data\\MetaTest"
-# filename = "\\8_delay.txt"
+path = "." + "\\Original Data\\2016-09-24"
+# filename = "\\19_delay.txt"
 # fname = path + filename
 # metadata_cleaner(fname)
+folder_clean(path)
