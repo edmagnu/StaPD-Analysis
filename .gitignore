@@ -1,2 +1,4 @@
 # ignore pdfs
 *.pdf
+# ignore originals
+*.orig
