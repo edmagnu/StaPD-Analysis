@@ -29,7 +29,403 @@ This is all the information from inside a data set that we need for each data ru
 'out.txt' should give all of the meaningful information from a data run.
 
 Lets start on Git so I'm not tied to this computer.
-'StaPD Analysis' in 'Documents\Data' on the lab computer.
-'2016-09-22', '2016-09-23', '2016-09-23to27', '2016-09-24', '2016-09-24', '2016-09-26', '2016-09-27', '2016-09-28', '2016-10-01', '2016-10-04' all *copied* to this folder. Put in 'Original Data'
-'Static Bulk Analysis' also copied to this folder.
-I want to start fresh, but having a reference is good.
+Made a git repo StaPD-Analysis 'git init' and 'git add'
+Used .gitignore to exclude '*.pdf'
+Pushed to GitHub and cloned on laptop 'git push origin master'
+'https://github.com/edmagnu/StaPD-Analysis.git'
+Branching? I'll see when I get there.
+
+Now that I have the data, I should look at metadata cleaning.
+Focus on '#_delay.txt' files for now.
+Necessary metadata:
+	'date', 'dlpro', 'dl100', 'static', 'mwon', 'mwf', 'attn'
+	Use 'other' to store the rest of the info in a long string.
+Use '# key: metadata' format.
+
+'Original Data' folders marked 'Read Only'
+Will test metadata format on '2016-09-22\6_delay.txt'
+'6_delay.txt' is reformatted. All comments are metadata, I can pick which ones to use.
+'Analysis.py' is created. Imports metadata and data from '6_delay.txt' into DataFrame
+For now I'll just try and read all files in the folder meeting the '#_delay.txt' format.
+That means I have to reformat all the metadata
+
+Metadata by hand would take 3min/file, 1 hour per folder.
+I'll try to write something to do the heavy lifting.
+'metadata_cleaner.py' does this.
+I've been successful. All the metadata from "8_delay.txt" has been handled, and any extra gets stored in "Other".
+"Filename", "Date", "Title", "DLPro", "DL100", "Static", "MWOn", "MWf", "Attn" are all essential, others are optional.
+
+"metadata_cleaner()" did it's job. I ran it on these folders.
+"2016-09-22", "2016-09-23", "2016-09-24", "2016-09-26", "2016-09-27", "2016-09-28", "2016-10-01", "2016-10-04"
+I gave a quick quality control check, they look good.
+
+Files all have trailing tabs, modifying 'metadata_cleaner()" to "line.strip()"
+"flist_clean()" reads folders from "data_folders.txt" and cleans them.
+Column labels fixed to be tab separated.
+Tested with "read_tidy()", data loaded succesfully.
+
+Now I need to read all data files into one big DataFrame.
+First I aught to get a proper list of files.
+Reads "data_folders.txt" to get the list of data folders.
+
+All files in each folder gets read in.
+This naturally produces errors when there are big typos.
+I will add an editing step to "metadata_cleaner()" to fix typos.
+I need to go error by error, and track down the right "fix."
+
+"2016-09-27\20_delay.txt":
+	Static is '15-00 mV Pulsed"
+	This could be +/- 1500 mV
+	According to "dscanmap.txt", it is +1500 mV
+	"21_delay.txt" is -1500 mV
+It looks like that's the only typo. For now.
+
+I sould check that all of the important metadata is correct.
+	Laser Frequency: Double check each day vs record
+		Also check DL-Pro vs DL-100
+	MW Frequency: Aught to be ~15930 MHz
+	Static: Between -3000 and 3000 mV, good +/- coverage
+	Attn: 53 - 10 dB
+	MWOn: Should always be on for these data.
+
+Looking at laser frequencies, "2016-10-01" has DL-Pro < 300 THz.
+Specifically, 36588.5 GHz, nonsense
+Must be a typo, forgot the last digit.
+Knowing DL-100 and MWf might help.
+Problem in Original and Modified data.
+DL-100 is always 36587.6 GHz, MWf is always 15932.0 MHz
+So DL-Pro must be either 365856.7 or 365888.5 GHz
+365888.5 GHz is a sensible typo, and puts DL-Pro above Dl-100.
+Check that it's in the folder AND DL-Pro = 36588.5
+All other DL-Pro metadata are reasonable, but still should check.
+
+Check commit history with "git log"
+
+I want a list of just files and metadata from "data".
+Get rid of all of the experimental data (i, signal, ...)
+"DataFrame.drop_duplicates()" removes the many copies, cuts down to the 189 unique data files and their metadata.
+
+Metadata checks:
+	DL-Pro is only 5 values
+		365872.6, 365856.7, 365840.7, 365824.8, 365888.5
+	DL-100 is only 5 values
+		365856.7, 365840.7, 365824.8, 365808.9, 365872.6
+	MWf is always between 15931.0 and 15933.0 MHz
+	DL-Pro - DL-100 is always 15.9 or 16 GHz
+		Also says DL-Pro > DL-100, as intended.
+	MWOn is always 1.0, always "On"
+	Static is always mod 10 between +/- 8000 mV
+	Attn always 5 values
+		38, 44, 50, 32, 26 dB
+
+Now I need to look at the metadata file by file.
+	2016-09-22:
+		Attn is 38 in Original record, 44 on dscanmap
+		This could be very bad?
+		I'm leaving it at 44 for now, I can look at lab notes later.
+	2016-09-23:
+		"16_delay.txt" & "17_delay.txt" are commented out of "dscanmap.txt". At the time, determined by experimental condition check (exp. cond. check) to be bad.
+		3, 4 are left off "dscanmap.txt"
+			They were reference scans for relative phase.
+		Ignoring MWf rounding errors <100 kHz
+		11 & 12 left off "dscanmap.txt"
+			Bad data by exp. cond. check.
+	2016-09-24:
+		All DL-Pro and DL-100 values don't match "dscanmap.txt"
+		365856.7 & 365840.7 in "dscanmap.txt"
+		365872.6 & 365856.7 in data files.
+		Will have to look at notes to resolve.
+	2016-09-26:
+		8 & 9 excluded by exp. cond. check.
+	2016-09-27:
+		7 ignored by exp. cond. check.
+		15 Ignored, repeat data point
+	2016-09-28:
+		DL-Pro has small error
+			365824.8 in data listed as 365828.8 in dscanmap.txt"
+			MWf and DL-100 shows it must be 24.8.
+			Not marked, not very significant
+		2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 ignored by exp. cond. check.
+		9 & 10 static fields sign flip.
+		27 ignored by exp. cond. check.
+	2016-10-01:
+		MWf 15932.0 in files, 15931.9 in dscanmap
+			Ignoring 100 kHz error
+		3 & 4 & 9 & 22 ignored by exp. cond. check.
+		2 ignored, reference phsae delay? At different dl freq.
+	2016-10-04:
+		Laser frequencies don't match
+			Data says 365824.8 & 365808.9
+			dscanmap says 365888.5 & 365872.6
+			I need to look at records to resolve.
+Aside from listed (very serious) discrepencies, the metadata is good.
+I can look at "out.txt", "Analysis.ipnb" and "Results.ipnb" for each to get more information.
+"out.txt" is just static field and fit results, not helpful.
+
+Lets get a better idea of what the big results I have are.
+The "Static Bulk Analysis" has "Results.ipynb", "Analysis.ipynb" and "Pictures.ipynb".
+"Analysis.ipynb" is to look individually at each delay scan, see if the fit and data are decent.
+"Results.ipynb" groups data sets as follows:
+	data856 from "2016-09-22"
+	data840 from "2016-09-23to27"
+	data824 from "2016-09-27"
+	data808 from "2016-09-28"
+	data872w from "2016-10-01"
+	data872s from "2016-10-04"
+These arrays pull form "out.txt" in each folder.
+The primary result plot uses
+	data872w, data856, data840, data824, data808
+	Claims they are all at 44 dB.
+	I should look at what files are actually in "out.txt"
+	Except "out.txt" is taken from "dscanmap.txt"
+	I should look at "2016-09-23to27\dscanmap.txt"
+
+"Pictures.ipynb" produces the plot I've been showing Gallagher
+	Also groups the data into data808, data824, data840, data856, data872w
+	Also claims all of these are at 44 dB
+
+If I just look at the metadata, what groups of conditions do I have?
+Do they contradict what I have record of?
+	"2016-09-22":
+		365872.6 & 365856.7 & 38 dB & ZFIL - 05 GHz & DIL + 02 GHz
+	"2016-09-23":
+		365856.7 & 365840.7 & 44 dB & ZFIL - 21 GHz & DIL - 14 GHz
+	"2016-09-24":
+		365872.6 & 365856.7 & 44 dB & ZFIL - 05 GHz & DIL + 02 GHz
+	"2016-09-26":
+		365856.7 & 365840.7 & 44 dB & ZFIL - 21 GHz & DIL - 14 GHz
+	"2016-09-27":
+		365840.7 & 365824.8 & 44 dB & ZFIL - 37 GHz & DIL - 30 GHz
+	"2016-09-28":
+		365824.8 & 365808.9 & 44 dB & ZFIL - 53 GHz & DIL - 46 GHz
+	"2016-10-01":
+		365888.5 & 365872.6 & 44 dB & ZFIL + 11 GHz & DIL + 18 GHz
+	"2016-10-04":
+		365824.8 & 365808.9 & 32 dB & ZFIL - 53 GHz & DIL - 46 GHz
+Naively, I'd like to look at 44 dB
+	+18, "2016-10-01"
+	+2, "2016-09-24"
+	-14, "2016-09-23" & "2016-09-26"
+	-30, "2016-09-27"
+	-46, "2016-09-28"
+Two ways to go:
+	Look at the picture sources and see what they're doing.
+	Start building data analysis so I can look.
+
+Lets ask what I need to do for analysis.
+Each file needs to be looked at independently.
+From it, fit parameters have to be extracted.
+I should hold a DataFrame separate from the measurements, but with the same metadata.
+First, lets write the master dataframe to a file so I don't reload it every time. "rawdata.txt"
+
+I need to transform the data, as r4ds says.
+Steps must be converted to wavelength using MWf & translation stage calibration.
+signal, sbackground, norm, nbackground need to build nsignal
+This should be done before writing "rawdata.txt"
+
+Start with wavelength.
+Delay stage calibration from "Analysis.ipynb", "wavelength()"
+m = 0.0002539 mm/step = 2.539e-4 mm/step
+c = 299792458 m/s, n_air = 1.0003
+wavelengths = steps*m*MWf*n/c
+"wavelengths" and "nsignal" added to "build_rawdata()"
+
+Now I need to do some modeling.
+y = y0 + a*sin(2*pi*w + phi)
+	a = amplitude
+	w = delay in wavelengths
+	phi = phase
+	y0 = mean
+can guess at fit values:
+	y0 from total mean
+	phi from averaged maximum
+	a from averaged max and min.
+
+Basic model fit function works.
+Manually assign starting parameters.
+"model_func(x, y0, a, phi)" is y = y0 + a*sin(2*pi*x + phi)
+Use "scipy.optimize.curve_fit()" to fit model
+Works fine.
+
+It might also be nice to clean up the "noisy" data with a simple running average.
+np.convolve works, but StackOverflow says it's much slower than np.cumsum.
+Okay, there is of course a pandas solution, DataFrame.rolling(*args).mean()
+I now have raw data as a scatter, a rolling mean as a line, and the model.
+
+I threw the main program into main() and commented it.
+
+The p0 starting parameters are hard coded right now, lets implement my guess strategy.
+y0 = y.mean()
+phi = [(x(ymax) + x(ymin)-0.5)/2 - 0.25] * pi
+a = (ymax - ymin)/2
+This seems to work alright.
+
+Plotting isn't actually something I want to do often.
+Let's tuck it away in a function and move forward.
+Done.
+While we're here, lets make it pretty.
+Important to keep the data source with the plot
+Source file is the title.
+Fit parameters y0, a, phi as well as static field and laser central frequency are "stamped" on the plot.
+When saved, saved as same folder & name as data file, with .pdf instead of .txt
+The saved pdf is actually about the size of the original .txt
+For better or worse, all delay scans now have pdfs of the plots.
+
+The next step is to produce fit parameters for every unique file, and store this with the metadata.
+Okay, I have added "y0", "a", and "phi" columns to the DataFrame and populated them with the fit parameters.
+A final section is added for the fitted model to produce a result based on delay.
+New DataFrame with fit params and fitted model predictions saved to "moddata.txt"
+Lets put this into a function called buid_fits()
+Done
+
+Of course, now that I've done this I can streamline the plotting part, I don't have to redo the model fitting.
+Okay, now assumes model and fit parameters are in data, pulls p0 out.
+You have to force the DataFrame fit values into a float, but now it's done.
+
+Lets make a separate DataFrame to .csv that just has filenames and fit parameters.
+Series.values gives an array of values, not a Series or DataFrame or whatever.
+So Series.values[15] gives an actual number / string / whatever.
+Okay, fits.txt has just one observation per file. All the metadata, the fit parameters, excludes individual data points.
+
+Okay, now I have everything I need, I need to start thinking about the figures that are interesting.
+Lets start simple, the above the limit phase dependence as a function of field.
+Above the limit is
+	f_cent = DIL + 2
+	f_cent = ZFIL - 5
+	DL-Pro = ZFIL + 3
+	DL-Pro = 365872 GHz
+
+This failed in a really big way.
+Looking at individual plots of data, the fits are COMPLETELY wrong. What happened?
+Everything was recorded with p0 (initial guess), not popt (fitted result).
+Rerun...
+Fits look good, but the "stamped" fit parameters are all nan.
+Fixed, a matter of using values to reduce a Series to actual numbers
+I had to hard code legend loc=4 to avoid the "stamp" overlapping the legend in some instances.
+
+Lets retry the simple DIL + 2 GHz plot
+Okay, it looks much better this time.
+But I need some systematic way to decide +/- amplitude.
+The important point is that
+	sin(x+pi) = -sin(x)
+	sin(x+2*pi) = sin(x)
+So first, lets make sure every phi is [0, 2pi]
+Note, DataFrame.loc[mask, "phi"] is fine, DataFrame[mask, "phi"] not fine. Use DataFrame[mask]["phi"]
+Okay, confining to [0, 2pi] is done.
+Now to force [0, pi] + phi_gate
+From the graph, it looks like pi*3/4 is right.
+	[0, 3/4]pi -> phi = phi, amp = amp
+	[3/4, 7/4]pi -> phi = phi - pi, amp = -amp
+	[7/4, ]pi -> phi = phi - 2*pi, amp = amp
+This fails. I think I need to start with all a > 0 to get a sense of the right gate.
+	a < 0 -> phi = phi - np.pi
+	phi = phi % 2*np.pi
+Okay, now barring a couple "bad apples", the data looks good.
+Eventually I should consider how to do this automatically, some kind of fitting.
+
+I need to look back and see why the "bad apples" had been excluded.
+It occurs to me I'm just selecting by frequency, the offending points could be other days?
+Dates are not part of the "fits" DataFrame, I'll add it back in.
+But otherwise, it looks like 09/22, 09/23, and 09/24 are included.
+
+I should make a flow chart for how the functions are used in the analysis.
+
+Huh, the date is actually not in "data" DataFrame either. Should be easy?
+"read_tidy()" is where data & metadata meet, and it doesn't include date.
+Alternately, I can strip from the name, but that's less... tidy.
+Oh, it's already there in a commented out line.
+
+The offending data is 2016-09-24/2_delay.txt and 3_delay.txt, 9_delay.txt, 10_delay.txt
+Okay, looking at "Static Bulk Analysis" "Results.ipynb", it's clear 2016-09-22 is the proper source, ignore everything else.
+Actually, filtering Attn=38.0 (remember the +6) accomplishes this.
+So now I have a very nice picture of DL-Pro = 365872.6 GHz, or DIL + 2 GHz.
+Now that I have this, lets put it in a function.
+
+Moving on to the DIL - 14 GHz, this is DL-Pro = 365856.7 GHz
+Setting the gate to 3/4 pi gives phi's not in the gate. Why? Something wrong with massage_phi_amp()
+gate was hardcoded, just deleted that and it's fixed.
+There's some ugly data points:
+	-1000, 0.001	2016-09-23\12_delay.txt
+	+1000, 0.001	2016-09-23\11_delay.txt
+	+ 200, 0.002	2016-09-23\16_delay.txt
+This is 2016-09-23to27, the notebook says everything is from the dscanmaps.
+16 and 17 are excluded by comment (last data runs)
+11 and 12 are excluded.. it's not clear why
+What other files are excluded in dscanmaps from other folders?
+Every 2016-09-24 is included
+2016-09-26: 8_delay.txt and 9_delay.txt excluded, "bias voltages way off"
+	This gets rid of two points that were very far off the trend.
+2016-09-27: 7_delay.txt excluded, right after laser frequency change.
+	15_delay.txt is excluded, a repeat 0, perhaps after rechecking something?
+	Not in this data set.
+Now, aside from repeated +/- 100 mV runs, it looks very clean. Pack it up for now.
+In the future, I should either decide to exclude some 100 mV, or average them.
+	Multiple points looks kind of sloppy, makes the plot more confusing.
+
+THERE MIGHT BE SOME ATTN RECORD KEEPING ISSUES WITH 2016-09-22
+dscanmaps show all at 44, not 38. This matches lab records.
+
+Moving on to DIL - 30 GHz, DL-Pro = 365840.7 GHz
+This is 2016-09-27, excluding 7 and 15_delay.txt helps but not essential.
+Picture looks good with the obvious 3pi/4 gate.
+
+I should do DIL + 18 GHz and DIL - 56 GHz as well.
+The data is not as good, but I do have it.
+All the DIL - 46 (!!!) are 2016-09-28
+12 through 39 EXCEPT 27 is used.
+Okay, DIL - 46 at 44 dB is done.
+27 is a repeat 0, 2 through 11 are a prior run with bad conditions.
+2016-10-01\2_delay.txt is from a different day.
+
+In DIL + 18 GHz
+All from 2016-10-01, only 3, 4, 9 and 22 excluded
+massage_amp_phi() is broken again, this time for 5pi/4
+Okay, I sat down and mapped out how it aught to work and fixed it.
+Now handles cases [0, gate-pi], [gate-pi, gate] and [gate, 2pi], looks good.
+DIL + 18, +2, -14, -30, -46 all set up in their own functions.
+I should check the filelists against the dscan maps.
+
+But first, lets go back to 2016-09-22.
+File metadata says Attn=38, dscanmap says 44
+It looks like I took two data points at 38 to compare with the prior day,
+	then I forgot to update the metadata as I copied and pasted going back to
+	measurements at 44 dB.
+metadata_cleaner.py is responsible for building all the metadata from original to modified files.
+typo_fix() has a list of special exemptions for specific issues.
+I should add all the attn fixes here, and leave a comment for justification.
+10 through 26_delay.txt need to be changed so "Attn" is 44, not 38
+
+Okay, fixed. But now I need to redo all the fits and raw and mod data...
+data = build_rawdata() and data, fits = build_fits(data)
+build_fits() is broken, thinks np (numpy) is a float?
+Turns out for some reason the Series being passed to curve_fit() are dtype=objects.
+Simplest thing to do is add dsort["wavelenghts"].astype(float).
+This works. Ideally, I should make the DataFrames with proper data types.
+
+Checking back with p2, it's messed up.
+This is a tumbling can of worms, now there are many 2016-09-24 included.
+This is another case of mis-recording, dscanmap is recorded differently.
+	File says DL-Pro @ 365872.6 GHz, DL-100 @ 365856.7 GHz
+	dscanmap says DL-Pro @ 365856.7 GHz, DL-100 @ 365840.7 GHz
+All the surrounding data is recorded as 365856.7, I trust it.
+The file metadata has been fixed by adding to typo_fix()
+ran build_rawdata() and build_fits() again to redo fits.txt and moddata.txt
+
+DIL+2 looks good again, except one point at static = +100 mV
+Two points at +/- 100 mV from 2016-09-23, 3 and 4_delay.txt
+First two runs to compare to prior day's work.
+5 discarded, reset at 7_delay.txt for the proper dataset.
+So just exclude 2016-09-23\3 & 4_delay.txt
+dil_p2() looks good now.
+
+Now, check against the dscanmaps.
+dil_p18() looks good
+dil_p2() looks good
+dil_m14()
+	2016-09-23\\5_delay.txt was before an adjustment, exclude.
+	2016-09-24 looks good
+	2016-09-26 looks good
+	2016-09-27 looks good
+	All good
+dil_m30() looks good
+dil_m46() looks good
