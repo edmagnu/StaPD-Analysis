@@ -29,3 +29,7 @@ This is all the information from inside a data set that we need for each data ru
 'out.txt' should give all of the meaningful information from a data run.
 
 Lets start on Git so I'm not tied to this computer.
+'StaPD Analysis' in 'Documents\Data' on the lab computer.
+'2016-09-22', '2016-09-23', '2016-09-23to27', '2016-09-24', '2016-09-24', '2016-09-26', '2016-09-27', '2016-09-28', '2016-10-01', '2016-10-04' all *copied* to this folder. Put in 'Original Data'
+'Static Bulk Analysis' also copied to this folder.
+I want to start fresh, but having a reference is good.
