@@ -15,6 +15,12 @@ import os
 import pandas as pd
 
 
+def atomic_units():
+    """Return a dictionary of atomic units"""
+    au = {"GHz": 1.51983e-7, "mVcm": 1.94469e-13, "ns": 4.13414e7}
+    return au
+
+
 def dlist_gen(path):
     """Produce a list of all "?_delay.txt" filenames in the given folder.
     Returns list of filenames"""
@@ -313,7 +319,6 @@ def dil_p2():
     return fsort
 
 
-# main program starts here
 def dil_m14():
     """Selects "fits.txt" data with lasers at DIL -14 GHz (from 2016-09-23to27)
     and plots Static vs. fit parameters "a, phi".
@@ -471,10 +476,103 @@ def build_datasets():
     return data, fits
 
 
+def dil_p2_expanded():
+    """Selects "fits.txt" data with lasers at DIL +2GHz and Attn = 38.0
+    (happens to all be 2016-09-22) and plots Static vs. fit parameters "a, phi"
+    Uses massage_amp_phi() before plotting to fix "a, phi".
+    Returns DataFrame "fsort" that is just the plotted observations."""
+    # read in all fits
+    fits = pd.read_csv("fits.txt", sep="\t", index_col=0)
+    # mask out DIL + 2 GHz and Attn = 44.0
+    mask = (fits["DL-Pro"] == 365872.6) & (fits["Attn"] == 44)
+    fsort = fits[mask].sort_values(by=["Static"]).copy(deep=True)
+    # unmassage amps and phases
+    mask = (fsort["a"] < 0)
+    fsort.loc[mask, "a"] = -fsort[mask]["a"]
+    fsort.loc[mask, "phi"] = fsort[mask]["phi"] + np.pi
+    fsort["phi"] = fsort["phi"] % (2*np.pi)
+    # amplitude -> pk-pk
+    fsort["a"] = 2*fsort["a"]
+    # mV/cm
+    fsort["Static"] = fsort["Static"]*0.72*0.1
+    # manually exclude bad data runs
+    excluded = ["2016-09-23\\3_delay.txt", "2016-09-23\\4_delay.txt"]
+    for fname in excluded:
+        fsort = fsort[fsort["Filename"] != fname]
+    # plot
+    fig, axes = plt.subplots(nrows=3, ncols=1, sharex=True)
+    # data
+    fsort.plot(x="Static", y="phi", kind="scatter", ax=axes[0])
+    fsort.plot(x="Static", y="a", style="-o", ax=axes[1])
+    fsort.plot(x="Static", y="y0", style="-o", ax=axes[2])
+    axes[0].set_yticks([0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi])
+    axes[0].set_yticklabels(["0", r"$\pi/2$", r"$\pi$",
+                             r"$3\pi/2$", r"$2\pi$"])
+    # make it pretty
+    axes[0].set(ylabel="Phase (rad)", title="DIL + 2 GHz")
+    axes[1].set(ylabel="Amp (pk-pk)")
+    axes[2].set(xlabel="Pulsed Field (mV/cm)", ylabel="Mean")
+    for i in [0, 1, 2]:
+        axes[i].grid(True)
+    for i in [1, 2]:
+        axes[i].legend()
+        axes[i].legend().remove()
+    return fsort
+
+
+def dil_m14_expanded():
+    """Selects "fits.txt" data with lasers at DIL -14 GHz (from 2016-09-23to27)
+    and plots Static vs. fit parameters "a, phi".
+    Uses massage_amp_phi() before plotting to fix "a, phi".
+    Manually excludes some bad data runs.
+    Returns DataFrame "fsort" that is just the plotted observations."""
+    # read in all fits
+    fits = pd.read_csv("fits.txt", sep="\t", index_col=0)
+    # mask out just DIL - 14 GHz
+    mask = (fits["DL-Pro"] == 365856.7)
+    fsort = fits[mask].sort_values(by=["Static"])
+    # unmassage amps and phases
+    mask = (fsort["a"] < 0)
+    fsort.loc[mask, "a"] = -fsort[mask]["a"]
+    fsort.loc[mask, "phi"] = fsort[mask]["phi"] + np.pi
+    fsort["phi"] = fsort["phi"] % (2*np.pi)
+    # amplitude -> pk-pk
+    fsort["a"] = 2*fsort["a"]
+    # mV/cm
+    fsort["Static"] = fsort["Static"]*0.72*0.1
+    # manually exclude bad data runs
+    excluded = ["2016-09-23\\5_delay.txt", "2016-09-23\\11_delay.txt",
+                "2016-09-23\\12_delay.txt", "2016-09-23\\16_delay.txt",
+                "2016-09-23\\17_delay.txt", "2016-09-26\\8_delay.txt",
+                "2016-09-26\\9_delay.txt"]
+    for fname in excluded:
+        fsort = fsort[fsort["Filename"] != fname]
+    # plot
+    fig, axes = plt.subplots(nrows=3, ncols=1, sharex=True)
+    fsort.plot(x="Static", y="phi", kind="scatter", ax=axes[0])
+    fsort.plot(x="Static", y="a", style="-o", ax=axes[1])
+    fsort.plot(x="Static", y="y0", style="-o", ax=axes[2])
+    axes[0].set_yticks([0, np.pi/2, np.pi, 3*np.pi/2, 2*np.pi])
+    axes[0].set_yticklabels(["0", r"$\pi/2$", r"$\pi$",
+                             r"$3\pi/2$", r"$2\pi$"])
+    # make it pretty
+    axes[0].set(ylabel=r"Phase $\phi$ (rad)", title="DIL - 14 GHz")
+    axes[1].set(ylabel="Amp (pk-pk)")
+    axes[2].set(xlabel="Pulsed Field (mV/cm)", ylabel="Mean")
+    for i in [0, 1, 2]:
+        axes[i].grid(True)
+    for i in [1, 2]:
+        axes[i].legend()
+        axes[i].legend().remove()
+    return fsort
+
+
 # data = build_rawdata()
 # data, fits = build_fits(data)
 # fsort = dil_p18()
 # fsort = dil_p2()
+fsort = dil_p2_expanded()
+fsort = dil_m14_expanded()
 # fsort = dil_m14()
 # fsort = dil_m30()
 # fsort = dil_m46()

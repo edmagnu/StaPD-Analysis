@@ -121,7 +121,7 @@ def typo_fix(metadata):
         metadata["DLPro"] = meta
         print(metadata["DLPro"])
         meta = metadata["DL100"]
-        meta = meta.replace("365856.7" ,"365840.7")
+        meta = meta.replace("365856.7", "365840.7")
         metadata["DL100"] = meta
         print(metadata["DL100"])
     print("----- Typo Fix -----")
