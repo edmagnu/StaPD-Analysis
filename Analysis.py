@@ -567,12 +567,12 @@ def dil_m14_expanded():
     return fsort
 
 
-# data = build_rawdata()
+data = build_rawdata()
 # data, fits = build_fits(data)
 # fsort = dil_p18()
 # fsort = dil_p2()
-fsort = dil_p2_expanded()
-fsort = dil_m14_expanded()
+# fsort = dil_p2_expanded()
+# fsort = dil_m14_expanded()
 # fsort = dil_m14()
 # fsort = dil_m30()
 # fsort = dil_m46()
