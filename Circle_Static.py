@@ -6,6 +6,7 @@ Created on Thu Mar 29 12:45:27 2018
 """
 
 import numpy as np
+from scipy.stats import linregress
 import datetime
 import matplotlib.pyplot as plt
 import scipy.optimize
@@ -121,6 +122,7 @@ def flist_gen():
     path = os.path.join("Circle Static", "2015-11-29")
     flist = flist + dlist_gen(path)
     return flist
+
 
 def build_rawdata():
     """Read in a list of folders. Read in data from every "#_delay.txt" file in
@@ -261,31 +263,112 @@ def massage_amp_phi(fsort, gate):
     return fsort
 
 
+def xi_and_sigma(line, x):
+    sumx = sum(x**2)
+    n = len(x)
+    sigma = line['stderr']
+    sigma_inter = sigma*np.sqrt(sumx/n)
+    intercept = line['intercept']
+    slope = line['slope']
+    xi = -intercept/slope
+    sigma_xi = np.sqrt(xi**2*((sigma/slope)**2 +
+                              (sigma_inter/intercept)**2))
+    return xi, sigma_xi
+
+
 def main():
-    # data = build_rawdata()
-    # data, fits = build_fits()
+    # import
     fname = os.path.join("Circle Static", "fits.txt")
     fits = pd.read_csv(fname, index_col=0)
+    # pk-pk amplitude
     fits['a'] = 2*fits['a']
-    # start with group 1
+    # degrees instead of radians
+    fits['fa'] = fits['fa']*360/(2*np.pi)
+    # get rid of bad files
+    fits = excluded_files(fits)
     gate = {1: np.pi, 2: 2*np.pi, 3: 1.5*np.pi}
-    colors = {1: 'C0', 2: 'C1', 3: 'C2'}
-    fig, ax = plt.subplots()
+    # linear regressions on each group
     for group in [1, 2, 3]:
         mask = fits['group'] == group
-        fsort = fits[mask].sort_values(by='fa')
-        # get rid of bad files
-        fsort = excluded_files(fsort)
-        # corece amp and phase
+        fsort = fits[mask].copy()
         fsort = massage_amp_phi(fsort, gate[group])
-        # plot
-        fsort.plot(x='fa', y='a', linestyle='none', marker='o', ax=ax,
-                   color=colors[group])
-    ax.legend().remove()
-    ax.set(xlabel=('Field Angle (rad)'), ylabel='Pk-Pk Amplitude',
-           xlim=(-0.35, 0.25))
-    return fsort
+        slope, intercept, rvalue, pvalue, stderr = linregress(
+                fsort['fa'], fsort['a'])
+        line = {'slope': slope, 'intercept': intercept, 'rvalue': rvalue,
+                'pvalue': pvalue, 'stderr': stderr}
+        fits.loc[mask, 'line'] = [line]*sum(mask)
+        fits.loc[mask, ['fa', 'a']] = fsort[['fa', 'a']]
+    # master linear regression
+    slope, intercept, rvalue, pvalue, stderr = linregress(
+            fits['fa'], fits['a'])
+    line = {'slope': slope, 'intercept': intercept, 'rvalue': rvalue,
+            'pvalue': pvalue, 'stderr': stderr}
+    fits['line_m'] = [line]*len(fits)
+    # build xi and sigma_xi
+    for group in [1, 2, 3]:
+        # line = lines[group]
+        mask = fits['group'] == group
+        fsort = fits[mask]
+        line = fsort.iloc[0]['line']
+        xi, sigma_xi = xi_and_sigma(line, fsort['fa'])
+        fits.loc[mask, 'xi'] = xi
+        fits.loc[mask, 'sigma_xi'] = sigma_xi
+    # master xi_m and sigma_xi_m
+    line = fits.iloc[0]['line_m']
+    xi, sigma_xi = xi_and_sigma(line, fits['fa'])
+    fits['xi_m'] = xi
+    fits['sigma_xi_m'] = sigma_xi
+    # plotting
+    colors = {1: 'C0', 2: 'C1', 3: 'C2'}
+    markers = {1: 'o', 2: '^', 3: 's'}
+    fig, ax = plt.subplots()
+    # total linear regression
+    line = fits.iloc[0]['line_m']
+    label = "{0} +/- {1} degrees".format(np.round(xi, 2),
+                                         np.round(sigma_xi, 2))
+    print("Total :\t", label)
+    label = "Linear Regression"
+    ax.plot(fits['fa'], line['intercept'] + line['slope']*fits['fa'], '-',
+            c='k', lw=2, label=label)
+    for group in [1, 2, 3]:
+        mask = fits['group'] == group
+        fsort = fits[mask]
+        line = fits.iloc[0]['line']
+        # label = labels[group]
+        # sumx = sum((fsort['fa'])**2)
+        # n = len(fsort)
+        # sigma = line[4]
+        # sigma_inter = sigma*np.sqrt(sumx/n)
+        # intercept = line[1]
+        xi = fsort.iloc[0]['xi']
+        sigma_xi = fsort.iloc[0]['sigma_xi']
+        label = "{0} +/- {1} degrees".format(np.round(xi, 2),
+                                             np.round(sigma_xi, 2))
+        print(group, " :\t", label)
+        label = "Set " + str(group)
+        ax.plot(fsort['fa'], fsort['a'], linestyle='none', color=colors[group],
+                marker=markers[group], label=label)
+        # x = fsorts[group]['fa']
+        # ax.plot(x, lines[group][1] + lines[group][0]*x, '-', c=colors[group])
+    ax.legend(fontsize=10)
+    ax.set_xlabel("Field Angle (deg.)", fontsize=14)
+    ax.set_ylabel("Pk-Pk Amplitude", fontsize=14)
+    ax.tick_params(labelsize=12, direction='in')
+    # twin axes with mV/cm
+    ax2 = ax.twiny()
+    ax2.tick_params('x')
+    locs = ax.get_xticks()
+    ax2.set_xlim(ax.get_xlim())
+    locs2 = 200*0.1*0.72*np.sin(locs*2*np.pi/360)  # component in z direction
+    ax2.set_xticklabels(np.round(locs2, 1))
+    ax2.tick_params(labelsize=12, direction='in')
+    ax2.set_xlabel("Vertical Field (mV/cm)", fontsize=14)
+    # tidy up
+    fig.tight_layout()
+    plt.savefig('circle_static.pdf')
+    return fits
 
 
+# data = build_rawdata()
+# data, fits = build_fits()
 result = main()
-print(result[['fa', 'phi', 'a']])
