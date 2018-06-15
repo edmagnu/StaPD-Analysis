@@ -2,7 +2,7 @@
 # Type	Delay Scan
 # Ov	100 mV
 # IR	-100 mV
-# Bot	20 mV
+# Bot	-20 mV
 # DL-Pro	365857.6 GHz
 # DL-100	365841.6 GHz
 # MW	On

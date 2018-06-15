@@ -108,8 +108,8 @@ def transform_data(data):
 
 
 def excluded_files(data):
-    flist = ['Circle Static\\2015-11-28\\7_delay_botm200mV_35dB.txt',
-             'Circle Static\\2015-11-29\\17_delay_hp200mV_vm020mV.txt']
+    flist = ['Circle Static\\2015-11-28\\7_delay_botm200mV_35dB.txt']
+    #          'Circle Static\\2015-11-29\\17_delay_hp200mV_vm020mV.txt']
     for fname in flist:
         mask = data['Filename'] != fname
         data = data[mask].copy(deep=True)
@@ -369,6 +369,6 @@ def main():
     return fits
 
 
-# data = build_rawdata()
-# data, fits = build_fits()
+data = build_rawdata()
+data, fits = build_fits()
 result = main()
