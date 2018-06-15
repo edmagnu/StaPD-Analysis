@@ -21,6 +21,19 @@ def atomic_units():
     return au
 
 
+def progress(source, i, total):
+    """print an updating report of 'source: i/total'"""
+    # start on fresh line
+    if i == 0:
+        print()
+    # progress
+    print("\r{0}: {1} / {2}".format(source, i+1, total), end="\r")
+    # newline if we've reached the end.
+    if i+1 == total:
+        print()
+    return
+
+
 def dlist_gen(path):
     """Produce a list of all "?_delay.txt" filenames in the given folder.
     Returns list of filenames"""
@@ -110,16 +123,17 @@ def build_rawdata():
     files = folderlist_gen(target)  # get every delay file from each folder.
     # read all file data & metadata into a tidy DataFrame
     data = pd.DataFrame()
-    for file in files:
-        print(file)
+    imax = len(files)
+    for i, file in enumerate(files):
+        # print(file)
+        progress("build_rawdata()", i, imax)
         data = data.append(read_tidy(file))
     # add "wavelengths" and "nsignal" (normalized signal)
     data = transform_data(data)
     data = data.reset_index(drop=True)  # unique index
-    print(data.keys())
     # write so I can use it elsewhere.
     data.to_csv("rawdata.txt", sep="\t")
-    print("Data written to 'rawdata.txt'")
+    print("rawdata.txt")
     return data
 
 
@@ -214,8 +228,11 @@ def build_fits(data):
     # add columns of NaN for each new key.
     dl = data.shape[0]
     data["y0"] = np.ones(dl)*np.NaN
+    data['sig_y0'] = np.ones(dl)*np.NaN
     data["a"] = np.ones(dl)*np.NaN
+    data["sig_a"] = np.ones(dl)*np.NaN
     data["phi"] = np.ones(dl)*np.NaN
+    data["sig_phi"] = np.ones(dl)*np.NaN
     data["model"] = np.ones(dl)*np.NaN
     # build DataFrame for metadata and fit params, not each point.
     fits = pd.DataFrame()
@@ -223,7 +240,8 @@ def build_fits(data):
     filelist = data["Filename"].unique()
     imax = len(filelist)
     for i, filename in enumerate(filelist):
-        print(i+1, " / ", imax)  # progress
+        # print(i+1, " / ", imax)  # progress
+        progress("build_fits()", i, imax)
         mask = data["Filename"] == filename  # mask all but one file
         # data is often triangle in delay, sort it
         dsort = data[mask].sort_values(by=["wavelengths"])
@@ -235,8 +253,11 @@ def build_fits(data):
                 dsort["nsignal"].astype(float), p0)
         # fill in fit parameters and model nsignal
         data.loc[mask, "y0"] = popt[0]
+        data.loc[mask, "sig_y0"] = np.sqrt(pcov[0, 0])
         data.loc[mask, "a"] = popt[1]
+        data.loc[mask, "sig_a"] = np.sqrt(pcov[1, 1])
         data.loc[mask, "phi"] = popt[2]
+        data.loc[mask, "sig_phi"] = np.sqrt(pcov[2, 2])
         # use original data, not the sorted data
         data.loc[mask, "model"] = model_func(
                 data[mask]["wavelengths"].astype(float), *popt)
@@ -245,11 +266,14 @@ def build_fits(data):
                    "Attn"]
         fit = dsort.iloc[0][keylist]
         fit["y0"] = popt[0]
+        fit["sig_y0"] = np.sqrt(pcov[0, 0])
         fit["a"] = popt[1]
+        fit["sig_a"] = np.sqrt(pcov[1, 1])
         fit["phi"] = popt[2]
+        fit["sig_phi"] = np.sqrt(pcov[2, 2])
         fits = fits.append(fit)
     # force fits key order
-    fits = fits[keylist + ["y0", "a", "phi"]]
+    fits = fits[keylist + ["y0", "sig_y0", "a", "sig_a", "phi", "sig_phi"]]
     # export and return result]
     data.to_csv("moddata.txt", sep="\t")
     fits.to_csv("fits.txt", sep="\t")
@@ -567,8 +591,8 @@ def dil_m14_expanded():
     return fsort
 
 
-# data = build_rawdata()
-# data, fits = build_fits(data)
+data = build_rawdata()
+data, fits = build_fits(data)
 # fsort = dil_p18()
 # fsort = dil_p2()
 fsort = dil_p2_expanded()
